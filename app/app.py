@@ -19,3 +19,5 @@ app.add_middleware(
 )
 
 app.include_router(router.matches.router, tags=['Matches'], prefix='/matches')
+app.include_router(router.tourney.router, tags=['Tourney'], prefix='/tourney')
+app.include_router(router.mappool.router, tags=['Mappool'], prefix='/mappool')

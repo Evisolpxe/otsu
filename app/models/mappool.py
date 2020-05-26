@@ -20,9 +20,9 @@ class MappoolStage(DynamicDocument):
 
 
 class MappoolComments(Document):
-    content = StringField()
     user_id = IntField(min_value=0)
-    reply = IntField(min_value=0, default=0)
+    content = StringField()
+    reply = ObjectIdField()
     timestamp = DateTimeField(default=datetime.datetime.now)
 
 
@@ -37,9 +37,9 @@ class Mappool(Document):
     recommend_elo = IntField(min_value=0, max_value=3000)
     cover = IntField()
     status = StringField(default='Pending')
+    description = StringField(max_length=3000)
 
     mappools = ListField(ReferenceField(MappoolStage))
     comments = ListField(ReferenceField(MappoolComments))
     ratings = ListField(ReferenceField(MappoolRating))
 
-#

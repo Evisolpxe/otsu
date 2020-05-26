@@ -3,21 +3,22 @@ import datetime
 RES_CODE = {
     10001: '添加match成功！等待elo重新计算完成。',
     10002: 'event排除成功！重新计算后生效。',
-    10003: '图池上传成功!',
-    10004: '注册比赛成功！',
+    10003: '创建图池成功!',
+    10004: '创建比赛成功！',
     10005: '玩家信息初始化成功！',
     10006: '注册队伍成功!',
     10007: '加入队伍成功!',
     10008: '退出队伍成功!',
     10010: 'elo计算成功！',
-    10011: 'mods修改成功',
+    10011: '添加图池成功！',
 
     20001: '玩家信息已经更新！',
 
     30001: '这场对局已经被上传过咯！',
     30002: 'event已经被添加过！',
-    30004: '比赛已被注册过！',
-    30005: '这张图已经有MOD了，如需修改请联系管理员。',
+    30004: '这个比赛已被注册过啦！请检查名称、缩写、中文名是否冲突。',
+    30005: '这个图池已被注册过啦！换个名字吧~',
+    30006: '这张图已经有MOD了，如需修改请联系管理员。',
 
     40000: '官网未查询到这场比赛',
     40001: '未查询到此比赛信息！请输入正确的比赛名称。',
@@ -47,9 +48,16 @@ RES_CODE = {
 }
 
 
-def raise_error(error_code, status=202, *args, **kwargs):
-    assert error_code in RES_CODE
-    res = {'message': RES_CODE[error_code], 'code': error_code, 'time': str(datetime.datetime.now())}
+def raise_success(error_code, *args, **kwargs):
+    res = {'message': RES_CODE[error_code], 'code': error_code, 'time': str(datetime.datetime.now()), 'status': 1}
+    if kwargs:
+        for k, v in kwargs.items():
+            res[k] = v
+    return res
+
+
+def raise_error(error_code, *args, **kwargs):
+    res = {'message': RES_CODE[error_code], 'code': error_code, 'time': str(datetime.datetime.now()), 'status': 0}
     if kwargs:
         for k, v in kwargs.items():
             res[k] = v
