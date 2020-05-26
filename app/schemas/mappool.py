@@ -30,7 +30,7 @@ class GetMappool(CreateMappool):
     status: str = Field(example='Pending')
 
     rating: MappoolRating
-    comments
+    comments: List[str]
 
 
 class UpdateMappool(BaseModel):
