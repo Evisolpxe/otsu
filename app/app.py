@@ -18,4 +18,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router.matches.router, tags=['Mappool'], prefix='/pools')
+app.include_router(router.matches.router, tags=['Matches'], prefix='/matches')
