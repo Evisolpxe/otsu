@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel, Field
 
 
@@ -8,7 +8,12 @@ class MappoolRatingCount(BaseModel):
 
 
 class MappoolRating(MappoolRatingCount):
-    user_id_list: List[int]
+    user_id: List[int]
+
+
+class CreateMappoolRating(BaseModel):
+    user_id: int
+    rating: int
 
 
 class MappoolComment(BaseModel):
@@ -34,13 +39,25 @@ class GetMappool(CreateMappool):
 
 
 class UpdateMappool(BaseModel):
-    recommend_elo: int = Field(..., description='创建者推荐适合的elo范围。', ge=0, le=3000, example=1000)
-    cover: int = Field(..., description='主页现实的图池封面，初始为0，在第一次传图后设为图池第一张图，之后可以自己设置。')
-    description: str = Field(..., description='创建者对图池的简介。',
+    recommend_elo: int = Field(None, description='创建者推荐适合的elo范围。', ge=0, le=3000, example=1000)
+    cover: int = Field(None, description='主页现实的图池封面，初始为0，在第一次传图后设为图池第一张图，之后可以自己设置。')
+    description: str = Field(None, description='创建者对图池的简介。',
                              example='## This is a description. #### You can write it by Markdown.')
-    status: str = Field(example='Pending')
+    status: str = Field(None, example='Pending')
 
 
 class MappoolOverview(CreateMappool):
     status: str = Field(example='Pending')
     rating: MappoolRatingCount
+
+
+class MappoolMap(BaseModel):
+    beatmap_id: int = Field(..., example=48416, ge=1)
+    mod_index: int = Field(..., example=1, ge=1)
+    selector: int = Field(None, example=245276)
+
+
+class CreateMappoolMaps(BaseModel):
+    stage: str = Field(..., example='Ro32')
+    mods: Dict[str, List[MappoolMap]] = Field(
+        example={'DT': [{'beatmap_id': 1627845, 'mod_index': 1, 'selector': 245276}]})

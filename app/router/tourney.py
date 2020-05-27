@@ -3,7 +3,7 @@ import json
 from fastapi import APIRouter, status, Query, HTTPException
 
 from app import models, crud, schemas
-from app.core.error import raise_error, raise_success
+from app.core.error import ResCode
 
 router = APIRouter()
 
@@ -17,9 +17,9 @@ async def get_tourney(*,
                       name: str = Query(..., description='比赛名称，支持中文名、缩写、全称。')
                       ) -> schemas.tourney.TourneyOut:
     q = crud.tourney.get_tourney(name)
-    if q:
-        return json.loads(q.to_json())
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应比赛哦！')
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应比赛哦！')
+    return json.loads(q.to_json())
 
 
 @router.post('/{tourney_name}',
@@ -32,8 +32,8 @@ async def create_tourney(*,
         or crud.tourney.get_tourney(name=t.acronym) \
         or crud.tourney.get_tourney(name=t.chn_name)
     if q:
-        return raise_error(30004, info={'tourney_name': q.tourney_name,
-                                        'acronym': q.acronym,
-                                        'chn_name': q.chn_name})
+        return ResCode.raise_error(12101, info={'tourney_name': q.tourney_name,
+                                                'acronym': q.acronym,
+                                                'chn_name': q.chn_name})
     crud.tourney.create_tourney(t)
-    return raise_success(10004, tourney_name=t.tourney_name, host=t.host)
+    return ResCode.raise_success(11101, tourney_name=t.tourney_name, host=t.host)

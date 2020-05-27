@@ -1,10 +1,10 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, status, Query, Path, HTTPException
+from fastapi import APIRouter, status, Query, Path, HTTPException, Response
 
 from app import models, crud, schemas
-from app.core.error import raise_error, raise_success
+from app.core.error import ResCode
 
 router = APIRouter()
 
@@ -17,19 +17,20 @@ async def get_all_mappool(*,
                           pagination: bool = False, page: int = 0, per_page: int = 30
                           ) -> List[schemas.mappool.MappoolOverview]:
     q_list = crud.mappool.get_all_mappool()
-    if q_list:
-        if pagination:
-            start = page * per_page
-            end = start + per_page
-            q_list = q_list[start: end]
+    if not q_list:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='还没有任何图池QwQ...快快上传吧!')
 
-        q_overview = []
-        for q in q_list:
-            overview = json.loads(q.to_json())
-            overview.update({'rating': crud.mappool.calc_rating(q.ratings)})
-            q_overview.append(overview)
-        return q_overview
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='还没有任何图池QwQ...快快上传吧!')
+    if pagination:
+        start = page * per_page
+        end = start + per_page
+        q_list = q_list[start: end]
+
+    q_overview = []
+    for q in q_list:
+        overview = json.loads(q.to_json())
+        overview.update({'rating': crud.mappool.calc_ratings(q.ratings)})
+        q_overview.append(overview)
+    return q_overview
 
 
 @router.post('/',
@@ -40,10 +41,10 @@ async def create_mappool(*,
                          ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(t.mappool_name)
     if q:
-        return raise_error(30005, mappool_name=t.mappool_name)
+        return ResCode.raise_error(12301, mappool_name=t.mappool_name)
 
     crud.mappool.create_mappool(t)
-    return raise_success(10003, mappool_name=t.mappool_name)
+    return ResCode.raise_success(11301, mappool_name=t.mappool_name)
 
 
 @router.get('/{mappool_name}',
@@ -56,13 +57,118 @@ async def get_mappool(*,
                       mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
                       ) -> schemas.mappool.MappoolOverview:
     q = crud.mappool.get_mappool(mappool_name)
-    if q:
-        return json.loads(q.to_json())
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    return json.loads(q.to_json())
 
 
-@router.put('/{mappool_name}')
+@router.put('/{mappool_name}',
+            summary='修改图池信息。',
+            status_code=status.HTTP_202_ACCEPTED)
 async def update_mappool(*,
-                         mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
-                         ):
-    pass
+                         mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                         t: schemas.mappool.UpdateMappool
+                         ) -> schemas.RaiseInfo:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    crud.mappool.update_mappool(q, t)
+    return ResCode.raise_success(21301, mappool_name=mappool_name)
+
+
+@router.get('/{mappool_name}/maps',
+            summary='获取图池谱面。',
+            status_code=status.HTTP_200_OK,
+            response_model=List[schemas.mappool.CreateMappoolMaps],
+            response_model_exclude_unset=True)
+async def get_mappool_map(*,
+                          mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
+                          ) -> List[schemas.mappool.CreateMappoolMaps]:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    maps = crud.mappool.get_mappool_map(q)
+    if not maps:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='图池里还没有谱面哦！')
+    return maps
+
+
+@router.post('/{mappool_name}/maps',
+             summary='上传图池谱面。',
+             status_code=status.HTTP_201_CREATED
+             )
+async def create_mappool_map(*,
+                             mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                             t: schemas.mappool.CreateMappoolMaps
+                             ) -> schemas.RaiseInfo:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+
+    stage = crud.mappool.create_mappool_map(q, t)
+    crud.mappool.push_stage_to_mappool(q, stage)
+    return ResCode.raise_success(11302, mappool_name=mappool_name)
+
+
+@router.put('/{mappool_name}/maps',
+            summary='修改图池谱面。',
+            status_code=status.HTTP_202_ACCEPTED)
+async def update_mappool_map(*,
+                             mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                             t: schemas.mappool.CreateMappoolMaps) -> schemas.RaiseInfo:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    stage = crud.mappool.get_mappool_stage(q, t)
+    crud.mappool.update_mappool_stage(stage, t)
+    return ResCode.raise_success(21302, mappool_name=mappool_name)
+
+
+@router.get('/{mappool_name}/rating',
+            summary='获取图池评价平均星数、评价人数、用户列表。',
+            response_model=schemas.mappool.MappoolRating)
+async def get_mappool_rating(*,
+                             mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                             ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    return crud.mappool.calc_ratings(q.ratings)
+
+
+@router.post('/{mappool_name}/rating',
+             summary='上传图池评价的星数，⭐1-5，在图池为Pending状态的时候，低于5分的评价全部变成1分。',
+             status_code=status.HTTP_201_CREATED)
+async def create_mappool_rating(*,
+                                mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                                t: schemas.mappool.CreateMappoolRating,
+                                response: Response
+                                ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+
+    rating = crud.mappool.get_mappool_rating_by_user(q, t.user_id)
+    if rating:
+        response.status_code = status.HTTP_409_CONFLICT
+        return ResCode.raise_error(12303, mappool_name=mappool_name)
+
+    rating = crud.mappool.create_mappool_rating(q, t)
+    crud.mappool.push_rating_to_mappool(q, rating)
+    return ResCode.raise_success(11303, mappool_name=mappool_name)
+
+
+@router.delete('/{mappool_name}/rating',
+               summary='删除!')
+async def delete_mappool_rating(*,
+                                mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                                user_id: int = Query(..., example=245267)
+                                ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    rating = crud.mappool.get_mappool_rating_by_user(q, user_id)
+    if not rating:
+        return ResCode.raise_error(32303, mappool_name=mappool_name, user_id=user_id)
+    crud.mappool.delete_mappool_rating(q, user_id)
+    return ResCode.raise_success(41303, mappool_name, user_id)

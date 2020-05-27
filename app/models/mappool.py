@@ -5,18 +5,14 @@ import datetime
 
 class MappoolDetail(EmbeddedDocument):
     beatmap_id = IntField(required=True, min_value=0)
-    index = IntField(required=True, min_value=1)
+    mod_index = IntField(required=True, min_value=1)
     selector = IntField(required=True)
 
 
-class MappoolMod(DynamicEmbeddedDocument):
-    pass
-
-
 class MappoolStage(DynamicDocument):
-    mappool = ReferenceField('Mappool')
+    mappool = ReferenceField('Mappool', required=True, unique_with='stage')
     stage = StringField(required=True)
-    mods = EmbeddedDocumentField(MappoolMod)
+    mods = DynamicField(required=True)
 
 
 class MappoolComments(Document):
@@ -27,19 +23,19 @@ class MappoolComments(Document):
 
 
 class MappoolRating(Document):
-    rating = IntField(min_value=0, max_value=5)
+    mappool = ReferenceField('Mappool', required=True, unique_with='user_id')
     user_id = IntField(min_value=0)
+    rating = IntField(min_value=0, max_value=5)
 
 
 class Mappool(Document):
-    mappool_name = StringField(required=True)
+    mappool_name = StringField(required=True, unique=True)
     host = IntField(required=True)
     recommend_elo = IntField(min_value=0, max_value=3000)
     cover = IntField()
     status = StringField(default='Pending')
     description = StringField(max_length=3000)
 
-    mappools = ListField(ReferenceField(MappoolStage))
-    comments = ListField(ReferenceField(MappoolComments))
-    ratings = ListField(ReferenceField(MappoolRating))
-
+    mappools = ListField(ReferenceField(MappoolStage, reverse_delete_rule=PULL))
+    comments = ListField(ReferenceField(MappoolComments, reverse_delete_rule=PULL))
+    ratings = ListField(ReferenceField(MappoolRating, reverse_delete_rule=PULL))
