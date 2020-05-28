@@ -35,14 +35,12 @@ class Stream(EmbeddedDocument):
 class EventResult(DynamicDocument):
     id = IntField(required=True, primary_key=True)
     mods = ListField(StringField())
-
     scoring_type = StringField()
     scores = ListField(ReferenceField(Score, reverse_delete_rule=PULL))
-    rank_point = DictField()
-
     start_time = DateTimeField()
 
     win_team = StringField()
+    rank_point = DictField()
 
     # beatmap_id = ReferenceField()
 
