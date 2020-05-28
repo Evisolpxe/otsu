@@ -19,7 +19,12 @@ class CreateMappoolRating(BaseModel):
 class MappoolComment(BaseModel):
     user_id: int = Field(..., description='评论人uid', exmaple=245276)
     content: str = Field('好评如潮。', description='评论。', example='好评如潮。')
-    reply: int = Field(None, description='回复楼层, 评论的comment_id。', example=0)
+    reply: str = Field(None, description='回复楼层, 评论的comment_id，无回复请返回空字符。', example="")
+
+
+class MappoolCommentOut(MappoolComment):
+    comment_id: str
+    timestamp: str
 
 
 class CreateMappool(BaseModel):
@@ -35,7 +40,7 @@ class GetMappool(CreateMappool):
     status: str = Field(example='Pending')
 
     rating: MappoolRating
-    comments: List[str]
+    comments: List[MappoolComment]
 
 
 class UpdateMappool(BaseModel):

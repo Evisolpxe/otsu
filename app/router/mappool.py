@@ -159,7 +159,8 @@ async def create_mappool_rating(*,
 
 
 @router.delete('/{mappool_name}/rating',
-               summary='删除!')
+               summary='删除用户的评价!',
+               status_code=status.HTTP_202_ACCEPTED)
 async def delete_mappool_rating(*,
                                 mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                                 user_id: int = Query(..., example=245267)
@@ -172,3 +173,48 @@ async def delete_mappool_rating(*,
         return ResCode.raise_error(32303, mappool_name=mappool_name, user_id=user_id)
     crud.mappool.delete_mappool_rating(q, user_id)
     return ResCode.raise_success(41303, mappool_name, user_id)
+
+
+@router.get('/{mappool_name}/comments',
+            summary='获取图池评评论、评论人ID、回复楼层。',
+            status_code=status.HTTP_200_OK,
+            response_model=List[schemas.mappool.MappoolCommentOut]
+            )
+async def get_mappool_comments(*,
+                               mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
+                               ) -> List[dict]:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    if not q.comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应评论哦！')
+    comments = crud.mappool.get_mappool_comments(q)
+    return comments
+
+
+@router.post('/{mappool_name}/comments',
+             summary='创建评论。',
+             status_code=status.HTTP_201_CREATED)
+async def create_mappool_comments(*,
+                                  mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                                  t: schemas.mappool.MappoolComment
+                                  ) -> schemas.RaiseInfo:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    comment = crud.mappool.create_mappool_comment(t)
+    crud.mappool.push_comment_to_mappool(q, comment)
+    return ResCode.raise_success(11304)
+
+
+@router.delete('/{mappool_name}/comments',
+               summary='删除用户的评论!',
+               status_code=status.HTTP_202_ACCEPTED)
+async def delete_mappool_rating(*,
+                                comment_id: str = Query(..., description='评论的ObjectID，唯一')
+                                ):
+    comment = models.MappoolComments.objects(id=comment_id).first()
+    if not comment:
+        return ResCode.raise_error(32304, comment_id=comment_id)
+    crud.mappool.delete_mappool_comment(comment_id)
+    return ResCode.raise_success(41304, comment_id)

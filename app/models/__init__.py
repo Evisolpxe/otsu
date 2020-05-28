@@ -1,8 +1,3 @@
-from mongoengine import *
-
-from .mappool import *
-from .maps import *
-from .matches import *
-from .tourney import *
+from mongoengine import connect
 
 connect('otsu')

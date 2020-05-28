@@ -1,5 +1,6 @@
 from math import log, sqrt
 
+
 class EloCalculator:
 
     def __init__(self, player_scores: dict, player_elo: dict, scoring_type: str, team_type: str):

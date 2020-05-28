@@ -18,7 +18,7 @@ class MappoolStage(DynamicDocument):
 class MappoolComments(Document):
     user_id = IntField(min_value=0)
     content = StringField()
-    reply = ObjectIdField()
+    reply = StringField(default='')
     timestamp = DateTimeField(default=datetime.datetime.now)
 
 

@@ -95,3 +95,26 @@ def delete_mappool_rating(q: models.Mappool, user_id: int):
 
 def push_rating_to_mappool(q: models.Mappool, rating: models.MappoolRating) -> models.Mappool:
     return q.update(push__ratings=rating.id)
+
+
+def get_mappool_comments(q: models.Mappool) -> List[dict]:
+    return [{'comment_id': str(i.id),
+             'content': i.content,
+             'user_id': i.user_id,
+             'timestamp': str(i.timestamp),
+             'reply': i.reply}
+            for i in q.comments]
+
+
+def create_mappool_comment(t: schemas.mappool.MappoolComment) -> models.MappoolComments:
+    comment = models.MappoolComments(**dict(t))
+    comment.save()
+    return comment
+
+
+def delete_mappool_comment(comment_id: str):
+    return models.MappoolComments.objects(id=comment_id).delete()
+
+
+def push_comment_to_mappool(q: models.Mappool, comment: models.MappoolComments) -> models.Mappool:
+    return q.update(push__comments=comment.id)
