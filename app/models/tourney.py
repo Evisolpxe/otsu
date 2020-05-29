@@ -1,5 +1,6 @@
 from mongoengine import *
 
+
 class Tourney(DynamicDocument):
     tourney_name = StringField(required=True, max_length=50, unique=True)
     chn_name = StringField(max_length=20, unique=True)

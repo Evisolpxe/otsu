@@ -3,10 +3,10 @@ from mongoengine import *
 import datetime
 
 
-class MappoolDetail(EmbeddedDocument):
+class MappoolDetail(DynamicEmbeddedDocument):
     beatmap_id = IntField(required=True, min_value=0)
     mod_index = IntField(required=True, min_value=1)
-    selector = IntField(required=True)
+    selector = IntField()
 
 
 class MappoolStage(DynamicDocument):
