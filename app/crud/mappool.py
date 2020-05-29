@@ -5,18 +5,19 @@ from pymongo.errors import DuplicateKeyError
 from mongoengine.errors import ValidationError, NotUniqueError
 from fastapi import HTTPException, status
 
-from app import models, schemas
+from app import schemas
+from app.models.mappool import Mappool, MappoolStage, MappoolRating, MappoolComments
 
 
-def get_all_mappool() -> List[models.Mappool.objects]:
-    return models.Mappool.objects().all()
+def get_all_mappool() -> List[Mappool.objects]:
+    return Mappool.objects().all()
 
 
-def get_mappool(mappool_name: str) -> models.Mappool.objects:
-    return models.Mappool.objects(mappool_name=mappool_name).first()
+def get_mappool(mappool_name: str) -> Mappool.objects:
+    return Mappool.objects(mappool_name=mappool_name).first()
 
 
-def calc_ratings(rating_list: List[models.MappoolRating]) -> schemas.mappool.MappoolRating:
+def calc_ratings(rating_list: List[MappoolRating]) -> schemas.mappool.MappoolRating:
     if not rating_list:
         return schemas.mappool.MappoolRating(counts=0, avg=0, user_id=[])
     try:
@@ -28,36 +29,36 @@ def calc_ratings(rating_list: List[models.MappoolRating]) -> schemas.mappool.Map
     return schemas.mappool.MappoolRating(counts=counts, avg=round(avg, 3), user_id=user_id)
 
 
-def create_mappool(t: schemas.mappool.CreateMappool) -> models.Mappool:
+def create_mappool(t: schemas.mappool.CreateMappool) -> Mappool:
     try:
-        mappool = models.Mappool(**dict(t))
+        mappool = Mappool(**dict(t))
         mappool.save()
         return mappool
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_411_LENGTH_REQUIRED, detail=str(e))
 
 
-def update_mappool(q: models.Mappool, t: schemas.mappool.UpdateMappool) -> models.Mappool:
+def update_mappool(q: Mappool, t: schemas.mappool.UpdateMappool) -> Mappool:
     return q.update(**dict(t))
 
 
-def get_mappool_stage(q: models.Mappool, t: schemas.mappool.CreateMappoolMaps):
-    return models.MappoolStage.objects(mappool=q.id, stage=t.stage).first()
+def get_mappool_stage(q: Mappool, t: schemas.mappool.CreateMappoolMaps):
+    return MappoolStage.objects(mappool=q.id, stage=t.stage).first()
 
 
-def update_mappool_stage(q: models.MappoolStage, t: schemas.mappool.CreateMappoolMaps):
+def update_mappool_stage(q: MappoolStage, t: schemas.mappool.CreateMappoolMaps):
     mods = {k: [dict(i) for i in v] for k, v in t.mods.items()}
     return q.update(stage=t.stage, mods=mods)
 
 
-def get_mappool_map(q: models.Mappool) -> List[schemas.mappool.CreateMappoolMaps]:
+def get_mappool_map(q: Mappool) -> List[schemas.mappool.CreateMappoolMaps]:
     return [json.loads(i.to_json()) for i in q.mappools]
 
 
-def create_mappool_map(q: models.Mappool, t: schemas.mappool.CreateMappoolMaps) -> models.MappoolStage:
+def create_mappool_map(q: Mappool, t: schemas.mappool.CreateMappoolMaps) -> MappoolStage:
     try:
         mods = {k: [dict(i) for i in v] for k, v in t.mods.items()}
-        stage = models.MappoolStage(mappool=q.id, stage=t.stage, mods=mods)
+        stage = MappoolStage(mappool=q.id, stage=t.stage, mods=mods)
         stage.save()
         return stage
     except (DuplicateKeyError, NotUniqueError) as e:
@@ -67,37 +68,37 @@ def create_mappool_map(q: models.Mappool, t: schemas.mappool.CreateMappoolMaps) 
     #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='谱面Index似乎重复了，请检查一下喔！')
 
 
-def push_stage_to_mappool(q: models.Mappool, stage: models.MappoolStage) -> models.Mappool:
+def push_stage_to_mappool(q: Mappool, stage: MappoolStage) -> Mappool:
     return q.update(push__mappools=stage.id)
 
 
-def get_mappool_rating(q: models.Mappool) -> schemas.mappool.MappoolRating:
+def get_mappool_rating(q: Mappool) -> schemas.mappool.MappoolRating:
     return calc_ratings(q.ratings)
 
 
-def get_mappool_rating_by_user(q: models.Mappool,
+def get_mappool_rating_by_user(q: Mappool,
                                user_id: int) -> schemas.mappool.MappoolRating:
-    return models.MappoolRating.objects(mappool=q.id, user_id=user_id).first()
+    return MappoolRating.objects(mappool=q.id, user_id=user_id).first()
 
 
-def create_mappool_rating(q: models.Mappool, t: schemas.mappool.CreateMappoolRating) -> models.MappoolRating:
+def create_mappool_rating(q: Mappool, t: schemas.mappool.CreateMappoolRating) -> MappoolRating:
     rating_value = t.rating
     if q.status == 'Pending' and rating_value < 5:
         rating_value = 1
-    rating = models.MappoolRating(mappool=q.id, user_id=t.user_id, rating=rating_value)
+    rating = MappoolRating(mappool=q.id, user_id=t.user_id, rating=rating_value)
     rating.save()
     return rating
 
 
-def delete_mappool_rating(q: models.Mappool, user_id: int):
-    return models.MappoolRating.objects(mappool=q.id, user_id=user_id).delete()
+def delete_mappool_rating(q: Mappool, user_id: int):
+    return MappoolRating.objects(mappool=q.id, user_id=user_id).delete()
 
 
-def push_rating_to_mappool(q: models.Mappool, rating: models.MappoolRating) -> models.Mappool:
+def push_rating_to_mappool(q: Mappool, rating: MappoolRating) -> Mappool:
     return q.update(push__ratings=rating.id)
 
 
-def get_mappool_comments(q: models.Mappool) -> List[dict]:
+def get_mappool_comments(q: Mappool) -> List[dict]:
     return [{'comment_id': str(i.id),
              'content': i.content,
              'user_id': i.user_id,
@@ -106,15 +107,15 @@ def get_mappool_comments(q: models.Mappool) -> List[dict]:
             for i in q.comments]
 
 
-def create_mappool_comment(t: schemas.mappool.MappoolComment) -> models.MappoolComments:
-    comment = models.MappoolComments(**dict(t))
+def create_mappool_comment(t: schemas.mappool.MappoolComment) -> MappoolComments:
+    comment = MappoolComments(**dict(t))
     comment.save()
     return comment
 
 
 def delete_mappool_comment(comment_id: str):
-    return models.MappoolComments.objects(id=comment_id).delete()
+    return MappoolComments.objects(id=comment_id).delete()
 
 
-def push_comment_to_mappool(q: models.Mappool, comment: models.MappoolComments) -> models.Mappool:
+def push_comment_to_mappool(q: Mappool, comment: MappoolComments) -> Mappool:
     return q.update(push__comments=comment.id)
