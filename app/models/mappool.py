@@ -7,12 +7,13 @@ class MappoolDetail(DynamicEmbeddedDocument):
     beatmap_id = IntField(required=True, min_value=0)
     mod_index = IntField(required=True, min_value=1)
     selector = IntField()
+    mods = ListField(StringField())
 
 
 class MappoolStage(DynamicDocument):
     mappool = ReferenceField('Mappool', required=True, unique_with='stage')
     stage = StringField(required=True)
-    mods = DynamicField(required=True)
+    maps = EmbeddedDocumentListField(MappoolDetail)
 
 
 class MappoolComments(Document):

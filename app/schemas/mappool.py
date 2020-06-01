@@ -60,9 +60,9 @@ class MappoolMap(BaseModel):
     beatmap_id: int = Field(..., example=48416, ge=1)
     mod_index: int = Field(..., example=1, ge=1)
     selector: int = Field(None, example=245276)
+    mods: List[str] = Field(..., example=['NM', 'DT'])
 
 
 class CreateMappoolMaps(BaseModel):
     stage: str = Field(..., example='Ro32')
-    mods: Dict[str, List[MappoolMap]] = Field(
-        example={'DT': [{'beatmap_id': 1627845, 'mod_index': 1, 'selector': 245276}]})
+    maps: List[MappoolMap]

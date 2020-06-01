@@ -3,7 +3,8 @@ from typing import List
 
 from fastapi import APIRouter, status, Query, Path, HTTPException, Response
 
-from app import models, crud, schemas
+from app import crud, schemas
+from app.models.mappool import MappoolComments
 from app.core.error import ResCode
 
 router = APIRouter()
@@ -18,7 +19,8 @@ async def get_all_mappool(*,
                           ) -> List[schemas.mappool.MappoolOverview]:
     q_list = crud.mappool.get_all_mappool()
     if not q_list:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='还没有任何图池QwQ...快快上传吧!')
+        # return ResCode.raise_error(32311)
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='还没有任何图池QwQ...快快上传吧!')
 
     if pagination:
         start = page * per_page
@@ -42,7 +44,6 @@ async def create_mappool(*,
     q = crud.mappool.get_mappool(t.mappool_name)
     if q:
         return ResCode.raise_error(12301, mappool_name=t.mappool_name)
-
     crud.mappool.create_mappool(t)
     return ResCode.raise_success(11301, mappool_name=t.mappool_name)
 
@@ -50,7 +51,7 @@ async def create_mappool(*,
 @router.get('/{mappool_name}',
             summary='获取图池信息。',
             status_code=status.HTTP_200_OK,
-            response_model=None,
+            response_model=schemas.mappool.MappoolOverview,
             response_model_exclude_unset=True,
             )
 async def get_mappool(*,
@@ -58,8 +59,11 @@ async def get_mappool(*,
                       ) -> schemas.mappool.MappoolOverview:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
-    return json.loads(q.to_json())
+        # return ResCode.raise_error(32301, mappool_name=mappool_name)
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
+    overview = json.loads(q.to_json())
+    overview.update({'rating': crud.mappool.calc_ratings(q.ratings)})
+    return overview
 
 
 @router.put('/{mappool_name}',
@@ -71,7 +75,7 @@ async def update_mappool(*,
                          ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
     crud.mappool.update_mappool(q, t)
     return ResCode.raise_success(21301, mappool_name=mappool_name)
 
@@ -86,10 +90,12 @@ async def get_mappool_map(*,
                           ) -> List[schemas.mappool.CreateMappoolMaps]:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
+        # return ResCode.raise_error(32301, mappool_name=mappool_name)
     maps = crud.mappool.get_mappool_map(q)
     if not maps:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='图池里还没有谱面哦！')
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='图池里还没有谱面哦！')
+        # return ResCode.raise_error(32302, mappool_name=mappool_name)
     return maps
 
 
@@ -103,8 +109,7 @@ async def create_mappool_map(*,
                              ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
-
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
     stage = crud.mappool.create_mappool_map(q, t)
     crud.mappool.push_stage_to_mappool(q, stage)
     return ResCode.raise_success(11302, mappool_name=mappool_name)
@@ -118,7 +123,7 @@ async def update_mappool_map(*,
                              t: schemas.mappool.CreateMappoolMaps) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
     stage = crud.mappool.get_mappool_stage(q, t)
     crud.mappool.update_mappool_stage(stage, t)
     return ResCode.raise_success(21302, mappool_name=mappool_name)
@@ -132,7 +137,8 @@ async def get_mappool_rating(*,
                              ):
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        # return ResCode.raise_error(32301, mappool_name=mappool_name)
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
     return crud.mappool.calc_ratings(q.ratings)
 
 
@@ -146,8 +152,7 @@ async def create_mappool_rating(*,
                                 ):
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
-
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
     rating = crud.mappool.get_mappool_rating_by_user(q, t.user_id)
     if rating:
         response.status_code = status.HTTP_409_CONFLICT
@@ -167,7 +172,7 @@ async def delete_mappool_rating(*,
                                 ):
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
     rating = crud.mappool.get_mappool_rating_by_user(q, user_id)
     if not rating:
         return ResCode.raise_error(32303, mappool_name=mappool_name, user_id=user_id)
@@ -185,9 +190,12 @@ async def get_mappool_comments(*,
                                ) -> List[dict]:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        # return ResCode.raise_error(32301, mappool_name=mappool_name)
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
     if not q.comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应评论哦！')
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有查询到相应评价！')
+        # return ResCode.raise_error(32303, mappool_name=mappool_name)
+
     comments = crud.mappool.get_mappool_comments(q)
     return comments
 
@@ -201,7 +209,7 @@ async def create_mappool_comments(*,
                                   ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
     comment = crud.mappool.create_mappool_comment(t)
     crud.mappool.push_comment_to_mappool(q, comment)
     return ResCode.raise_success(11304)
@@ -213,7 +221,7 @@ async def create_mappool_comments(*,
 async def delete_mappool_rating(*,
                                 comment_id: str = Query(..., description='评论的ObjectID，唯一')
                                 ):
-    comment = models.MappoolComments.objects(id=comment_id).first()
+    comment = MappoolComments.objects(id=comment_id).first()
     if not comment:
         return ResCode.raise_error(32304, comment_id=comment_id)
     crud.mappool.delete_mappool_comment(comment_id)

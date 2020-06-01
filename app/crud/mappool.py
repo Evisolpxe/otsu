@@ -6,7 +6,7 @@ from mongoengine.errors import ValidationError, NotUniqueError
 from fastapi import HTTPException, status
 
 from app import schemas
-from app.models.mappool import Mappool, MappoolStage, MappoolRating, MappoolComments
+from app.models.mappool import Mappool, MappoolStage, MappoolRating, MappoolComments, MappoolDetail
 
 
 def get_all_mappool() -> List[Mappool.objects]:
@@ -47,8 +47,8 @@ def get_mappool_stage(q: Mappool, t: schemas.mappool.CreateMappoolMaps):
 
 
 def update_mappool_stage(q: MappoolStage, t: schemas.mappool.CreateMappoolMaps):
-    mods = {k: [dict(i) for i in v] for k, v in t.mods.items()}
-    return q.update(stage=t.stage, mods=mods)
+    maps = [MappoolDetail(**dict(i)) for i in t.maps]
+    return q.update(stage=t.stage, maps=maps)
 
 
 def get_mappool_map(q: Mappool) -> List[schemas.mappool.CreateMappoolMaps]:
@@ -57,12 +57,12 @@ def get_mappool_map(q: Mappool) -> List[schemas.mappool.CreateMappoolMaps]:
 
 def create_mappool_map(q: Mappool, t: schemas.mappool.CreateMappoolMaps) -> MappoolStage:
     try:
-        mods = {k: [dict(i) for i in v] for k, v in t.mods.items()}
-        stage = MappoolStage(mappool=q.id, stage=t.stage, mods=mods)
+        maps = [MappoolDetail(**dict(i)) for i in t.maps]
+        stage = MappoolStage(mappool=q.id, stage=t.stage, maps=maps)
         stage.save()
         return stage
     except (DuplicateKeyError, NotUniqueError) as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='已有同名stage，请尝试更换或修改操作喔！')
+        raise HTTPException(status_code=status.HTTP_200_OK, detail='已有同名stage，请尝试更换或修改操作喔！')
     # except  as e:
     #     print(e)
     #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='谱面Index似乎重复了，请检查一下喔！')

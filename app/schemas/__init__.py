@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from . import tourney, mappool
+from . import tourney, mappool, users
 
 
 class RaiseInfo(BaseModel):

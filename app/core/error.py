@@ -29,12 +29,31 @@ class ResCode:
         11101: '创建比赛(Tourney)成功！',
         12101: '这个比赛(Tourney)已被注册过啦！请检查名称、缩写、中文名是否冲突。',
 
+        # ==========
         11301: '创建图池(Mappool)成功!',
         12301: '这个图池(Mappool)已被注册过啦！换个名字吧~',
-        11302: '创建图池(Mappool)谱面成功!',
+        11302: '创建图池谱面(Mappool-Map)成功!',
         11303: '创建评价成功！',
         12303: '同一图池每个玩家只能评价一次！尝试修改评价吧~',
         11304: '发表评论成功~',
+
+        21301: '图池(Mappool)信息已经更新！',
+        21302: '图池谱面(Mappool_Map)信息已经更新！',
+
+        32301: '没有找到对应图池哦！',
+        32311: '还没有任何图池QwQ...快快上传吧!',
+        32302: '图池里还没有谱面哦！',
+        32303: '没有查询到相应评价。',
+        32304: '没有查询到相应评论。',
+
+
+        41303: '删除评价成功！下次再来噢~',
+        41304: '删除评论成功！下次再来噢~',
+        # ===========
+        11501: '玩家数据写入成功~',
+        12501: '玩家已经入库啦，需要更新请用update!',
+        33501: '没有获取到玩家信息哦!',
+
 
         # 10005: '玩家信息初始化成功！',
         # 10006: '注册队伍成功!',
@@ -44,17 +63,13 @@ class ResCode:
         # 10011: '添加图池成功！',
 
         # 20001: '玩家信息已经更新！',
-        21301: '图池(Mappool)信息已经更新！',
-        21302: '图池谱面(Mappool_Map)信息已经更新！',
 
         30001: '这场对局(Match)已经被上传过咯！',
 
 
-        32303: '没有查询到相应评价。',
-        32304: '没有查询到相应评论。',
 
-        41303: '删除评价成功！下次再来噢~',
-        41304: '删除评论成功！下次再来噢~',
+
+
 
         # 30002: 'event已经被添加过！',
         # 30006: '这张图已经有MOD了，如需修改请联系管理员。',
@@ -88,7 +103,11 @@ class ResCode:
 
     @staticmethod
     def raise_success(error_code, *args, **kwargs):
-        res = {'message': ResCode.RES_CODE[error_code], 'code': error_code, 'time': str(datetime.datetime.now()),
+        try:
+            code = ResCode.RES_CODE[error_code]
+        except KeyError as e:
+            raise Exception('Error Code Error', e)
+        res = {'message': code, 'code': error_code, 'time': str(datetime.datetime.now()),
                'status': 1}
         if kwargs:
             for k, v in kwargs.items():

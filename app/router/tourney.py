@@ -2,7 +2,7 @@ import json
 
 from fastapi import APIRouter, status, Query, HTTPException
 
-from app import models, crud, schemas
+from app import crud, schemas
 from app.core.error import ResCode
 
 router = APIRouter()
