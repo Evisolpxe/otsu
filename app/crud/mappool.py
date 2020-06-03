@@ -6,7 +6,7 @@ from mongoengine.errors import ValidationError, NotUniqueError
 from fastapi import HTTPException, status
 
 from app import schemas
-from app.models.mappool import Mappool, MappoolStage, MappoolRating, MappoolComments, MappoolDetail
+from app.models.mappool import Mappool, MappoolMap, MappoolRating, MappoolComments
 
 
 def get_all_mappool() -> List[Mappool.objects]:
@@ -42,25 +42,42 @@ def update_mappool(q: Mappool, t: schemas.mappool.UpdateMappool) -> Mappool:
     return q.update(**dict(t))
 
 
-def get_mappool_stage(q: Mappool, t: schemas.mappool.CreateMappoolMaps):
-    return MappoolStage.objects(mappool=q.id, stage=t.stage).first()
+# def get_mappool_stage(q: Mappool, t: schemas.mappool.CreateMappoolMaps):
+#     return MappoolStage.objects(mappool=q.id, stage=t.stage).first()
+#
+#
+# def update_mappool_stage(q: MappoolStage, t: schemas.mappool.CreateMappoolMaps):
+#     maps = [MappoolDetail(**dict(i)) for i in t.maps]
+#     return q.update(stage=t.stage, maps=maps)
 
 
-def update_mappool_stage(q: MappoolStage, t: schemas.mappool.CreateMappoolMaps):
-    maps = [MappoolDetail(**dict(i)) for i in t.maps]
-    return q.update(stage=t.stage, maps=maps)
-
-
-def get_mappool_map(q: Mappool) -> List[schemas.mappool.CreateMappoolMaps]:
+def get_mappool_maps(q: Mappool) -> List[schemas.mappool.MappoolMap]:
     return [json.loads(i.to_json()) for i in q.mappools]
 
 
-def create_mappool_map(q: Mappool, t: schemas.mappool.CreateMappoolMaps) -> MappoolStage:
+def get_mappool_map(q: Mappool, beatmap_id: int) -> MappoolMap:
+    return MappoolMap.objects(mappool=q.id, beatmap_id=beatmap_id).first()
+
+
+def update_mappool_map(beatmap: MappoolMap, t: schemas.mappool.MappoolMap):
+    return beatmap.update(**dict(t))
+
+
+def delete_mappool_map(beatmap: MappoolMap):
+    return beatmap.delete()
+
+
+def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap]) -> dict:
     try:
-        maps = [MappoolDetail(**dict(i)) for i in t.maps]
-        stage = MappoolStage(mappool=q.id, stage=t.stage, maps=maps)
-        stage.save()
-        return stage
+        map_list = [i.beatmap_id for i in MappoolMap.objects(beatmap_id__in=[i.beatmap_id for i in t]).all()]
+        counts = 0
+        for i in t:
+            if i.beatmap_id not in map_list:
+                stage = MappoolMap(mappool=q.id, stage=i.stage, beatmap_id=i.beatmap_id, mods=i.mods,
+                                   selector=i.selector, mod_index=i.mod_index)
+                stage.save()
+                counts += 1
+        return {'total_map': len(map_list), 'uploaded': counts, 'mappool_name': q.mappool_name}
     except (DuplicateKeyError, NotUniqueError) as e:
         raise HTTPException(status_code=status.HTTP_200_OK, detail='已有同名stage，请尝试更换或修改操作喔！')
     # except  as e:
@@ -68,8 +85,8 @@ def create_mappool_map(q: Mappool, t: schemas.mappool.CreateMappoolMaps) -> Mapp
     #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='谱面Index似乎重复了，请检查一下喔！')
 
 
-def push_stage_to_mappool(q: Mappool, stage: MappoolStage) -> Mappool:
-    return q.update(push__mappools=stage.id)
+# def push_stage_to_mappool(q: Mappool, stage: MappoolStage) -> Mappool:
+#     return q.update(push__mappools=stage.id)
 
 
 def get_mappool_rating(q: Mappool) -> schemas.mappool.MappoolRating:

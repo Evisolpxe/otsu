@@ -61,8 +61,4 @@ class MappoolMap(BaseModel):
     mod_index: int = Field(..., example=1, ge=1)
     selector: int = Field(None, example=245276)
     mods: List[str] = Field(..., example=['NM', 'DT'])
-
-
-class CreateMappoolMaps(BaseModel):
     stage: str = Field(..., example='Ro32')
-    maps: List[MappoolMap]

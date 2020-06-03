@@ -3,17 +3,24 @@ from mongoengine import *
 import datetime
 
 
-class MappoolDetail(DynamicEmbeddedDocument):
+class MappoolMap(DynamicDocument):
+    mappool = ReferenceField('Mappool', required=True, unique_with='stage')
+    stage = StringField(required=True)
+    mods = ListField(required=True)
     beatmap_id = IntField(required=True, min_value=0)
     mod_index = IntField(required=True, min_value=1)
     selector = IntField()
-    mods = ListField(StringField())
+
+# class MappoolDetail(DynamicEmbeddedDocument):
+#     beatmap_id = IntField(required=True, min_value=0)
+#     mod_index = IntField(required=True, min_value=1)
+#     selector = IntField()
 
 
-class MappoolStage(DynamicDocument):
-    mappool = ReferenceField('Mappool', required=True, unique_with='stage')
-    stage = StringField(required=True)
-    maps = EmbeddedDocumentListField(MappoolDetail)
+# class MappoolStage(DynamicDocument):
+#     mappool = ReferenceField('Mappool', required=True, unique_with='stage')
+#     stage = StringField(required=True)
+#     mods = DynamicField(required=True)
 
 
 class MappoolComments(Document):
@@ -37,6 +44,6 @@ class Mappool(Document):
     status = StringField(default='Pending')
     description = StringField(max_length=3000)
 
-    mappools = ListField(ReferenceField(MappoolStage, reverse_delete_rule=PULL))
+    mappools = ListField(ReferenceField(MappoolMap, reverse_delete_rule=PULL))
     comments = ListField(ReferenceField(MappoolComments, reverse_delete_rule=PULL))
     ratings = ListField(ReferenceField(MappoolRating, reverse_delete_rule=PULL))

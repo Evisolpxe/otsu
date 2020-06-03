@@ -1,7 +1,6 @@
 from mongoengine import *
 
-from app.models.mappool import MappoolStage
-
+from app.models.mappool import MappoolMap
 
 class EloChange(EmbeddedDocument):
     user_id = IntField(required=True)
@@ -50,7 +49,7 @@ class Match(DynamicDocument):
     match_id = IntField(required=True)
     time = DateTimeField(required=True)
 
-    mappool = ReferenceField(MappoolStage)
+    mappool = ListField(ReferenceField(MappoolMap))
     removed_events = ListField
 
     result = ListField(ReferenceField(EventResult, reverse_delete_rule=PULL))
@@ -59,6 +58,3 @@ class Match(DynamicDocument):
     joined_player = ListField(IntField)
     referee = IntField()
     stream = EmbeddedDocumentField(Stream)
-
-
-
