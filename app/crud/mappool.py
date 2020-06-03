@@ -73,9 +73,10 @@ def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap]) -> dict:
         counts = 0
         for i in t:
             if i.beatmap_id not in map_list:
-                stage = MappoolMap(mappool=q.id, stage=i.stage, beatmap_id=i.beatmap_id, mods=i.mods,
-                                   selector=i.selector, mod_index=i.mod_index)
-                stage.save()
+                beatmap = MappoolMap(mappool=q.id, stage=i.stage, beatmap_id=i.beatmap_id, mods=i.mods,
+                                     selector=i.selector, mod_index=i.mod_index)
+                beatmap.save()
+                push_map_to_mappool(q, beatmap)
                 counts += 1
         return {'total_map': len(map_list), 'uploaded': counts, 'mappool_name': q.mappool_name}
     except (DuplicateKeyError, NotUniqueError) as e:
@@ -85,8 +86,8 @@ def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap]) -> dict:
     #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='谱面Index似乎重复了，请检查一下喔！')
 
 
-# def push_stage_to_mappool(q: Mappool, stage: MappoolStage) -> Mappool:
-#     return q.update(push__mappools=stage.id)
+def push_map_to_mappool(q: Mappool, beatmap: MappoolMap) -> Mappool:
+    return q.update(push__mappools=beatmap.id)
 
 
 def get_mappool_rating(q: Mappool) -> schemas.mappool.MappoolRating:
