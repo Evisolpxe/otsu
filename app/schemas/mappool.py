@@ -66,4 +66,4 @@ class MappoolMap(BaseModel):
 
 
 class MappoolMapOut(MappoolMap):
-    id: str
+    object_id: str
