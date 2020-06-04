@@ -39,10 +39,10 @@ class MappoolRating(Document):
 class Mappool(Document):
     mappool_name = StringField(required=True, unique=True)
     host = IntField(required=True)
-    recommend_elo = IntField(min_value=0, max_value=3000)
-    cover = IntField()
+    recommend_elo = IntField(min_value=0, max_value=3000, default=3000)
+    cover = IntField(default=0)
     status = StringField(default='Pending')
-    description = StringField(max_length=3000)
+    description = StringField(max_length=3000, default='主办很懒所以主办什么都不写。')
 
     mappools = ListField(ReferenceField(MappoolMap, reverse_delete_rule=PULL))
     comments = ListField(ReferenceField(MappoolComments, reverse_delete_rule=PULL))

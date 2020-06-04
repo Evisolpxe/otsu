@@ -93,9 +93,9 @@ async def get_mappool_map(*,
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
         # return ResCode.raise_error(32301, mappool_name=mappool_name)
     maps = crud.mappool.get_mappool_maps(q)
-    if not maps:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='图池里还没有谱面哦！')
-        # return ResCode.raise_error(32302, mappool_name=mappool_name)
+    # if not maps:
+    #     raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='图池里还没有谱面哦！')
+    #     # return ResCode.raise_error(32302, mappool_name=mappool_name)
     return maps
 
 
