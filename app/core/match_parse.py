@@ -31,6 +31,6 @@ class MatchParser:
                 ]
 
 
-A = MatchParser(MatchData.objects(match_id=62006639).first())
+A = MatchParser(MatchData.objects(match_id=61570715).first())
 
 print(A.parse_result())

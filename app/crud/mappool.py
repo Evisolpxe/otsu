@@ -56,7 +56,7 @@ def delete_mappool(q: Mappool) -> None:
 
 
 def get_mappool_maps(q: Mappool) -> List[dict]:
-    return [{'id': str(i.id),
+    return [{'object_id': str(i.id),
              'beatmap_id': i.beatmap_id,
              'mod_index': i.mod_index,
              'mods': i.mods,
