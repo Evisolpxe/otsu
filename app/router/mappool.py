@@ -68,7 +68,8 @@ async def get_mappool(*,
 
 @router.put('/{mappool_name}',
             summary='修改图池信息。',
-            status_code=status.HTTP_202_ACCEPTED)
+            status_code=status.HTTP_202_ACCEPTED,
+            )
 async def update_mappool(*,
                          mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                          t: schemas.mappool.UpdateMappool
@@ -80,14 +81,27 @@ async def update_mappool(*,
     return ResCode.raise_success(21301, mappool_name=mappool_name)
 
 
+@router.delete('/{mappool_name}',
+               summary='删除图池。')
+async def delete_mappool(*,
+                         mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
+                         ) -> schemas.RaiseInfo:
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
+    crud.mappool.delete_mappool(q)
+    return ResCode.raise_success(41301, mappool_name=mappool_name)
+
+
 @router.get('/{mappool_name}/maps',
             summary='获取图池谱面。',
             status_code=status.HTTP_200_OK,
-            response_model=List[schemas.mappool.MappoolMap],
+            response_model=List[schemas.mappool.MappoolMapOut],
             response_model_exclude_unset=True)
 async def get_mappool_map(*,
-                          mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
-                          ) -> List[schemas.mappool.MappoolMap]:
+                          mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                          object_id=False
+                          ) -> List[dict]:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
@@ -110,9 +124,18 @@ async def create_mappool_map(*,
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
         return ResCode.raise_error(32301, mappool_name=mappool_name)
-    print(t)
     crud.mappool.create_mappool_map(q, t)
     return ResCode.raise_success(11302, mappool_name=mappool_name)
+
+
+@router.delete('/{mappool_name}/maps',
+               summary='用id删除图池谱面。', )
+async def delete_mappool_map_by_id(*, object_id: str = Query(..., description='object_id')):
+    beatmap = crud.mappool.get_mappool_map_by_id(object_id)
+    if not beatmap:
+        return ResCode.raise_error(32312, object_id=object_id)
+    beatmap.delete()
+    return ResCode.raise_success(41302)
 
 
 @router.put('/{mappool_name}/maps/{beatmap_id}',
@@ -142,7 +165,8 @@ async def delete_mappool_map(*,
     if not q:
         return ResCode.raise_error(32301, mappool_name=mappool_name)
     beatmap = crud.mappool.get_mappool_map(q, beatmap_id)
-    return crud.mappool.delete_mappool_map(beatmap)
+    crud.mappool.delete_mappool_map(beatmap)
+    return ResCode.raise_success(41302, mappool_name=mappool_name, beatmap_id=beatmap_id)
 
 
 @router.get('/{mappool_name}/rating',

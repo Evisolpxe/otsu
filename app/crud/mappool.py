@@ -42,6 +42,10 @@ def update_mappool(q: Mappool, t: schemas.mappool.UpdateMappool) -> Mappool:
     return q.update(**dict(t))
 
 
+def delete_mappool(q: Mappool) -> None:
+    return q.delete()
+
+
 # def get_mappool_stage(q: Mappool, t: schemas.mappool.CreateMappoolMaps):
 #     return MappoolStage.objects(mappool=q.id, stage=t.stage).first()
 #
@@ -51,8 +55,14 @@ def update_mappool(q: Mappool, t: schemas.mappool.UpdateMappool) -> Mappool:
 #     return q.update(stage=t.stage, maps=maps)
 
 
-def get_mappool_maps(q: Mappool) -> List[schemas.mappool.MappoolMap]:
-    return [json.loads(i.to_json()) for i in q.mappools]
+def get_mappool_maps(q: Mappool) -> List[dict]:
+    return [{'id': str(i.id),
+             'beatmap_id': i.beatmap_id,
+             'mod_index': i.mod_index,
+             'mods': i.mods,
+             'stage': i.stage,
+             'selector': i.selector}
+            for i in q.mappools]
 
 
 def get_mappool_map(q: Mappool, beatmap_id: int) -> MappoolMap:
@@ -65,6 +75,10 @@ def update_mappool_map(beatmap: MappoolMap, t: schemas.mappool.MappoolMap):
 
 def delete_mappool_map(beatmap: MappoolMap):
     return beatmap.delete()
+
+
+def get_mappool_map_by_id(object_id: MappoolMap.id):
+    return MappoolMap.objects(id=object_id).first()
 
 
 def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap]) -> dict:
