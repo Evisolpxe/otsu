@@ -94,7 +94,7 @@ async def delete_mappool(*,
 
 
 @router.get('/{mappool_name}/maps',
-            summary='获取图池谱面。',
+            summary='获取图池全部谱面。',
             status_code=status.HTTP_200_OK,
             response_model=List[schemas.mappool.MappoolMapOut],
             response_model_exclude_unset=True)
@@ -113,7 +113,7 @@ async def get_mappool_maps(*,
 
 
 @router.post('/{mappool_name}/maps',
-             summary='上传图池谱面。',
+             summary='批量上传图池谱面。',
              status_code=status.HTTP_201_CREATED
              )
 async def create_mappool_maps(*,
@@ -127,10 +127,10 @@ async def create_mappool_maps(*,
     return ResCode.raise_success(11302, mappool_name=mappool_name)
 
 
-@router.delete('/{mappool_name}/maps',
-               summary='用id修改图池谱面。', )
+@router.put('/maps/{object_id}',
+            summary='用object_id修改图池谱面。', )
 async def delete_mappool_map_by_id(*,
-                                   object_id: str = Query(..., description='object_id'),
+                                   object_id: str = Path(..., description='object_id'),
                                    t: schemas.mappool.MappoolMap):
     beatmap = crud.mappool.get_mappool_map_by_id(object_id)
     if not beatmap:
@@ -139,9 +139,10 @@ async def delete_mappool_map_by_id(*,
     return ResCode.raise_success(21302)
 
 
-@router.delete('/{mappool_name}/maps',
-               summary='用id删除图池谱面。', )
-async def delete_mappool_map_by_id(*, object_id: str = Query(..., description='object_id')):
+@router.delete('/maps/{object_id}',
+               summary='用object_id删除图池谱面。', )
+async def delete_mappool_map_by_id(*,
+                                   object_id: str = Path(..., description='object_id')):
     beatmap = crud.mappool.get_mappool_map_by_id(object_id)
     if not beatmap:
         return ResCode.raise_error(32312, object_id=object_id)
@@ -150,7 +151,7 @@ async def delete_mappool_map_by_id(*, object_id: str = Query(..., description='o
 
 
 @router.get('/{mappool_name}/maps/{beatmap_id}',
-            summary='获取这张谱面信息。')
+            summary='获取指定谱面信息。')
 async def get_mappool_map(*,
                           mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                           beatmap_id: int = Path(..., description='beatmap_id')
@@ -170,7 +171,7 @@ async def get_mappool_map(*,
 
 
 @router.put('/{mappool_name}/maps/{beatmap_id}',
-            summary='修改图池谱面。',
+            summary='修改指定谱面信息。',
             status_code=status.HTTP_202_ACCEPTED)
 async def update_mappool_map(*,
                              mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
@@ -187,7 +188,7 @@ async def update_mappool_map(*,
 
 
 @router.delete('/{mappool_name}/maps/{beatmap_id}',
-               summary='删除图池谱面。')
+               summary='删除指定谱面。')
 async def delete_mappool_map(*,
                              mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                              beatmap_id: int = Path(..., description='beatmap_id')
