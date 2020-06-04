@@ -4,7 +4,7 @@ import datetime
 
 
 class MappoolMap(DynamicDocument):
-    mappool = ReferenceField('Mappool', required=True, unique_with='stage')
+    mappool = ReferenceField('Mappool', required=True)
     stage = StringField(required=True)
     mods = ListField(required=True)
     beatmap_id = IntField(required=True, min_value=0)
