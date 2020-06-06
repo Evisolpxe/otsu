@@ -1,1 +1,1 @@
-from . import matches, tourney, mappool, users
+from . import matches, tourney, mappool, users, maps

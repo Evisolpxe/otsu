@@ -14,11 +14,13 @@ router = APIRouter()
             status_code=status.HTTP_200_OK,
             response_model=schemas.users.User,
             response_model_exclude_unset=True)
-async def get_user(*, user_id: int):
+async def get_user(*, user_id: int, refresh: bool = None):
     user = crud.users.get_user(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_200_OK, detail='没有获取到玩家信息哦!')
     # print(json.loads(user.to_json()))
+    if refresh:
+        user.update(raw_data=crud.users.refresh_user_raw(user_id))
     return json.loads(user.to_json())
 
 

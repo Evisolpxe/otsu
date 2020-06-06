@@ -17,6 +17,10 @@ def get_user(user_id: int) -> Users:
     return Users.objects(user_id=user_id).first()
 
 
+def refresh_user_raw(user_id: int):
+    return get_user_by_api(user_id)[0]
+
+
 def create_user(user_id: int, season_elo: int, **kwargs) -> Users:
     raw_data = get_user_by_api(user_id)[0]
     if season_elo == 0:

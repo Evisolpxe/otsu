@@ -45,6 +45,8 @@ class GetMappool(CreateMappool):
 
 class UpdateMappool(BaseModel):
     mappool_name: str
+    acronym: str = Field('')
+    chn_name: str = Field('')
     recommend_elo: int = Field(..., description='创建者推荐适合的elo范围。', ge=0, le=3000, example=1000)
     cover: int = Field(..., description='主页现实的图池封面，初始为0，在第一次传图后设为图池第一张图，之后可以自己设置。')
     description: str = Field(..., description='创建者对图池的简介。',
@@ -61,9 +63,10 @@ class MappoolMap(BaseModel):
     beatmap_id: int = Field(..., example=48416, ge=1)
     mod_index: int = Field(..., example=1, ge=1)
     selector: int = Field(None, example=245276)
-    mods: List[str] = Field(..., example=['NM', 'DT'])
+    mods: List[str] = Field(..., example=['DT'])
     stage: str = Field(..., example='Ro32')
 
 
 class MappoolMapOut(MappoolMap):
     object_id: str
+    detail: dict

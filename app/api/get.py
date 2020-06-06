@@ -4,6 +4,7 @@ from requests.exceptions import ConnectTimeout
 BASE_URL = 'https://osu.ppy.sh/api'
 TOKEN = '9aa58c3820b6a95beb5b4430df5f88f5812cdaf1'
 
+
 def get_match_by_history(match_id: int) -> dict:
     # mplink页面的源api，过长的比赛返回数据会不完整，需要多次请求拼接数据。
     # 更改limit值似乎无用。
@@ -32,12 +33,12 @@ def get_match_by_history(match_id: int) -> dict:
     return data
 
 
-def get_map_by_api(map_id: int) -> dict:
+def get_map_by_api(map_id: int, mods: int = 0) -> dict:
     retry = 0
     while retry < 5:
         try:
-            r = requests.post(f"{BASE_URL}/get_beatmaps",
-                              {'k': TOKEN, 'b': map_id})
+            r = requests.get(f"{BASE_URL}/get_beatmaps?k={TOKEN}&b={map_id}&mods={mods}")
+
         except ConnectTimeout as err:
             retry += 1
             print(f'Connect failed, try again. Times: {retry}')

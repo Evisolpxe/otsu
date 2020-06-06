@@ -6,6 +6,7 @@ from mongoengine.errors import ValidationError, NotUniqueError
 from fastapi import HTTPException, status
 
 from app import schemas
+from app.crud.maps import get_beatmap
 from app.models.mappool import Mappool, MappoolMap, MappoolRating, MappoolComments
 
 
@@ -39,7 +40,8 @@ def create_mappool(t: schemas.mappool.CreateMappool) -> Mappool:
 
 
 def update_mappool(q: Mappool, t: schemas.mappool.UpdateMappool) -> Mappool:
-    return q.update(**dict(t))
+    t = {k: v for k, v in dict(t).items() if v}
+    return q.update(**t)
 
 
 def delete_mappool(q: Mappool) -> None:
@@ -61,7 +63,9 @@ def get_mappool_maps(q: Mappool) -> List[dict]:
              'mod_index': i.mod_index,
              'mods': i.mods,
              'stage': i.stage,
-             'selector': i.selector}
+             'selector': i.selector,
+             'detail': get_beatmap(i.beatmap_id,
+                                   mod=[m for m in i.mods if m in ['DT', 'HR', 'EZ', 'HT']][0])}
             for i in q.mappools]
 
 
