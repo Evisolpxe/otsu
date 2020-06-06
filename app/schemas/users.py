@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class User(BaseModel):
-    raw: dict
+    detail: dict
     season_elo: int
     current_elo: int = Field(None)
 
