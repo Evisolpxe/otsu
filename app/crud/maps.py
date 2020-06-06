@@ -26,8 +26,3 @@ def create_beatmap(beatmap_id: int, mod: int = 0):
         return beatmap
     except KeyError as e:
         print(e)
-
-
-#
-
-get_beatmap(1192957, ['DT'], refresh=True)
