@@ -12,10 +12,10 @@ def get_beatmap(beatmap_id: int, mod: List[str], refresh: bool = False):
 
     beatmap = MapData.objects(beatmap_id=beatmap_id, mod=mod).first()
     if not beatmap:
-        return create_beatmap(beatmap_id, mod)
+        beatmap = create_beatmap(beatmap_id, mod)
     if refresh:
         beatmap.delete()
-        return create_beatmap(beatmap_id, mod)
+        beatmap = create_beatmap(beatmap_id, mod)
     return loads(beatmap.to_json())
 
 
