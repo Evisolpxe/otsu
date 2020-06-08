@@ -2,6 +2,7 @@ from mongoengine import *
 
 from app.models.mappool import MappoolMap
 
+
 class EloChange(EmbeddedDocument):
     user_id = IntField(required=True)
     value = IntField(required=True)
@@ -25,6 +26,8 @@ class Score(Document):
     team = StringField()
     passed = IntField(max_value=1, min_value=0)
 
+    event = ReferenceField('EventResult')
+
 
 class Stream(EmbeddedDocument):
     streamer = IntField(required=True)
@@ -35,26 +38,31 @@ class EventResult(DynamicDocument):
     id = IntField(required=True, primary_key=True)
     mods = ListField(StringField())
     scoring_type = StringField()
+    team_type = StringField()
     scores = ListField(ReferenceField(Score, reverse_delete_rule=PULL))
     start_time = DateTimeField()
 
     win_team = StringField()
     rank_point = DictField()
 
-    # beatmap_id = ReferenceField()
+    beatmap_id = IntField()
+    match = ReferenceField('Match')
 
 
 class Match(DynamicDocument):
     tourney = ReferenceField('Tourney')
-    match_id = IntField(required=True)
+    match_id = IntField(required=True, unique=True)
     time = DateTimeField(required=True)
 
-    mappool = ListField(ReferenceField(MappoolMap))
-    removed_events = ListField
+    # mappool = ListField(ReferenceField(MappoolMap))
 
-    result = ListField(ReferenceField(EventResult, reverse_delete_rule=PULL))
+    events = ListField(ReferenceField('EventResult', reverse_delete_rule=PULL))
     elo_change = EmbeddedDocumentListField(EloChange)
 
-    joined_player = ListField(IntField)
-    referee = IntField()
+    joined_player = ListField(IntField, default=[])
+    referee = IntField(default=0)
     stream = EmbeddedDocumentField(Stream)
+
+
+EventResult.register_delete_rule(Score, 'event', CASCADE)
+Match.register_delete_rule(EventResult, 'match', CASCADE)

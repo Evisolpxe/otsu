@@ -17,3 +17,10 @@ class Tourney(DynamicDocument):
     meta = {
         'indexes': ['tourney_name', 'chn_name', 'acronym']
     }
+
+
+class Quest(DynamicField):
+    title = StringField()
+    description = StringField()
+    rewards = StringField()
+    agent = IntField()
