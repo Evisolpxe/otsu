@@ -9,10 +9,14 @@ router = APIRouter()
 
 @router.get('/{match_id}',
             summary='获取比赛详情。')
-async def get_match(*, match_id: int):
+async def get_match(*,
+                    match_id: int,
+                    refresh: bool = None):
     match = crud.matches.get_match(match_id)
     if not match:
         return ResCode.raise_error(33201, match_id=match_id)
+    if refresh:
+        match = crud.matches.create_match(match_id)
     return {'match_id': match.match_id,
             'time': str(match.time),
             'referee': match.referee,
@@ -42,7 +46,10 @@ async def get_match(*, match_id: int):
              summary='添加对局。',
              response_model_exclude_unset=True,
              )
-async def create_match(*, match_id: int, tourney_name: str = None, mappool_name: str = None):
+async def create_match(*, match_id: int,
+                       tourney_name: str = None,
+                       mappool_name: str = None
+                       ):
     if crud.matches.get_match(match_id):
         return ResCode.raise_error(30001, match_id=match_id)
     crud.matches.create_match(match_id)
@@ -58,7 +65,17 @@ async def delete_match(*, match_id: int):
     crud.matches.delete_match(match)
     return ResCode.raise_success(41201, match_id=match_id)
 
-@router.delete('/{match_id}/{event_id}',
+
+@router.delete('/event/{event_id}',
                summary='删除某回合所有成绩。')
 async def delete_event(event_id: int):
+    event = crud.matches.get_event(event_id)
+    if not event:
+        return ResCode.raise_success(33202, event_id=event_id)
+    crud.matches.delete_event(event)
+    return ResCode.raise_success(41202, event_id=event_id)
 
+@router.delete('/score/{score_id}',
+               summary='删掉某个成绩。')
+async def delete_score(score_id: str):
+    score =

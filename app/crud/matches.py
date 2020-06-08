@@ -26,9 +26,17 @@ def delete_match(match: Match):
     return match.delete()
 
 
-def push_match_to_tourney(tourney, match: Match):
+def get_event(event_id: int):
+    return EventResult.objects(id=event_id).first()
+
+
+def delete_event(event: EventResult):
+    return event.delete()
+
+
+def get_score(score_id: str):
     pass
 
 
-def get_event(events: int):
-    return EventResult.objects(id=events).first()
+def push_match_to_tourney(tourney, match: Match):
+    pass
