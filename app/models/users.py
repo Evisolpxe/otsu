@@ -12,7 +12,7 @@ class Users(DynamicDocument):
     raw_data = DynamicField()
     lang = StringField(default='None')
 
-    elo_history = ListField(ReferenceField(EloHistory, reverse_delete_rule=PULL))
+    elo_history = ListField(ReferenceField(EloHistory, reverse_delete_rule=PULL), default=[])
     season_elo = IntField()
     current_elo = IntField()
 
