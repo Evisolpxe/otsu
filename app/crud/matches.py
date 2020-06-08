@@ -1,6 +1,6 @@
 from typing import List
 
-from app.models.matches import Match, MatchData, EventResult
+from app.models.matches import Match, MatchData, EventResult, Score
 from app.api.get import get_match_by_history
 from app.core.match_parse import MatchParser
 
@@ -35,7 +35,11 @@ def delete_event(event: EventResult):
 
 
 def get_score(score_id: str):
-    pass
+    return Score.objects(score_id=score_id).first()
+
+
+def delete_score(score: Score):
+    return score.delete()
 
 
 def push_match_to_tourney(tourney, match: Match):

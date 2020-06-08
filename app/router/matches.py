@@ -75,7 +75,12 @@ async def delete_event(event_id: int):
     crud.matches.delete_event(event)
     return ResCode.raise_success(41202, event_id=event_id)
 
+
 @router.delete('/score/{score_id}',
                summary='删掉某个成绩。')
 async def delete_score(score_id: str):
-    score =
+    score = crud.matches.get_score(score_id)
+    if not score:
+        return ResCode.raise_error(33203, score_id=score_id)
+    crud.matches.delete_score(score)
+    return ResCode.raise_success(41203, score_id=score_id)
