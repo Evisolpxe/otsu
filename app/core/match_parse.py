@@ -39,8 +39,8 @@ class MatchParser:
 
     def to_db(self):
         match = Match(match_id=self.match_id,
-                      time=datetime.strptime(self.result[0]['start_time'], '%Y-%m-%dT%H:%M:%S%z'))
-                      # joined_player=self.parse_joined_player())
+                      time=datetime.strptime(self.result[0]['start_time'], '%Y-%m-%dT%H:%M:%S%z'),
+                      joined_player=self.joined_player)
         match.save()
         for i in self.result:
             event = EventResult(id=i['id'],

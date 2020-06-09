@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 
 from app import crud
 
 from app.core.error import ResCode
+from app.crud.users import init_user
 
 router = APIRouter()
 
@@ -48,11 +49,13 @@ async def get_match(*,
              )
 async def create_match(*, match_id: int,
                        tourney_name: str = None,
-                       mappool_name: str = None
+                       mappool_name: str = None,
+                       background_tasks: BackgroundTasks
                        ):
     if crud.matches.get_match(match_id):
         return ResCode.raise_error(30001, match_id=match_id)
-    crud.matches.create_match(match_id)
+    match = crud.matches.create_match(match_id)
+    background_tasks.add_task(init_user, match.joined_player)
     return ResCode.raise_success(31201, match_id=match_id)
 
 

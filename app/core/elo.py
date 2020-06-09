@@ -7,6 +7,12 @@ from app.crud.users import get_user, create_user
 from app.crud.matches import get_match
 
 
+class TourneyPerformance:
+
+    def __init__(self):
+        pass
+
+
 class SoloPerformance:
 
     def __init__(self, match: Match):
@@ -34,7 +40,7 @@ class SoloPerformance:
                 self.match_point[player2.user_id] += 1
 
         if self.valid_match:
-            return self.sorted_rank_point_dict()
+            return EloCalculator(self.sorted_rank_point_dict()).main()
         return self.error_message
 
     def round_check(self) -> None:
@@ -50,9 +56,10 @@ class SoloPerformance:
 
     def sorted_rank_point_dict(self) -> dict:
         # 获得玩家最终rank_point的排名。
-        return {str(x[0]): i for i, x in enumerate(
-            sorted(self.match_point.items(), key=lambda x: x[1], reverse=True), 1
-        )}
+        return {str(x[0]): i
+                for i, x in enumerate(
+                sorted(self.match_point.items(), key=lambda x: x[1], reverse=True), 1)
+                }
 
 
 class EloCalculator:
@@ -60,7 +67,6 @@ class EloCalculator:
     def __init__(self, rank_dict: dict):
         self.rank_dict = rank_dict
         self.player_elo = {i: get_user(i).current_elo for i in rank_dict.keys()}
-        print(self.player_elo)
         self.add_virtual_player()
 
     @staticmethod
@@ -99,11 +105,10 @@ class EloCalculator:
     def add_virtual_player(self) -> None:
         # 虚拟player用于降低elo波动
         sorted_elo_list = sorted([elo for elo in self.player_elo.values()], reverse=True)
-        print(sorted_elo_list)
         self.player_elo['max'] = sorted_elo_list[0] + max(400, sorted_elo_list[0] - sorted_elo_list[1])
         self.player_elo['min'] = sorted_elo_list[-1] - max(400, sorted_elo_list[0] - sorted_elo_list[1])
 
-    def main(self):
+    def main(self) -> dict:
         d_i_list, elo_change_dict = [], {}
         for player_id, elo in self.player_elo.items():
             if player_id not in ('min', 'max'):
@@ -118,11 +123,9 @@ class EloCalculator:
                            for player, change in elo_change_dict.items()}
         return elo_change_dict
 
-
-A = SoloPerformance(get_match(62663926))
-B = EloCalculator(A.main())
-print(B.main())
-
+# A = SoloPerformance(get_match(62663926))
+# B = EloCalculator(A.main())
+# print(B.main())
 
 
 # class EloCalculatorOld:

@@ -59,7 +59,7 @@ class Match(DynamicDocument):
     events = ListField(ReferenceField('EventResult', reverse_delete_rule=PULL))
     elo_change = EmbeddedDocumentListField(EloChange)
 
-    joined_player = ListField(IntField, default=[])
+    joined_player = ListField(IntField(), default=[])
     referee = IntField(default=0)
     stream = EmbeddedDocumentField(Stream)
 

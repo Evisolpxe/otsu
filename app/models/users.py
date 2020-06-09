@@ -15,5 +15,3 @@ class Users(DynamicDocument):
     elo_history = ListField(ReferenceField(EloHistory, reverse_delete_rule=PULL), default=[])
     season_elo = IntField()
     current_elo = IntField()
-
-    joined_events = ListField(ReferenceField('EventResult'))

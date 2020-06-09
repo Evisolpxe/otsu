@@ -28,3 +28,12 @@ def create_user(user_id: int, season_elo: int = 0, **kwargs) -> Users:
     user = Users(user_id=user_id, detail=raw_data, current_elo=season_elo, **kwargs)
     user.save()
     return user
+
+
+def init_user(user_id: List[int]):
+    for uid in user_id:
+        user = get_user(uid)
+        if user:
+            user.update(detail=refresh_user_raw(uid))
+        else:
+            create_user(uid)
