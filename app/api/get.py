@@ -50,17 +50,19 @@ def get_map_by_api(map_id: int, mods: int = 0) -> dict:
 
 
 def get_user_by_api(user_id: int) -> dict:
-    retry = 0
-    while retry < 5:
-        try:
-            r = requests.post(f"{BASE_URL}/get_user",
-                              {'k': TOKEN, 'u': user_id})
-        except ConnectTimeout as err:
-            retry += 1
-            print(f'Connect failed, try again. Times: {retry}')
-        else:
-            break
-        # 忘记当时为啥这么写了。
-    if not r.json():
-        return
+    r = requests.post(f"{BASE_URL}/get_user",
+                      {'k': TOKEN, 'u': user_id})
     return r.json()
+    # while retry < 5:
+    #     try:
+    #         r = requests.post(f"{BASE_URL}/get_user",
+    #                           {'k': TOKEN, 'u': user_id})
+    #     except ConnectTimeout as err:
+    #         retry += 1
+    #         print(f'Connect failed, try again. Times: {retry}')
+    #     else:
+    #         break
+    #     # 忘记当时为啥这么写了。
+    # if not r.json():
+    #     return
+
