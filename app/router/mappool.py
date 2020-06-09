@@ -100,12 +100,13 @@ async def delete_mappool(*,
             response_model_exclude_unset=True)
 async def get_mappool_maps(*,
                            mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                           exclude_detail: bool = True
                            ) -> List[dict]:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
         # return ResCode.raise_error(32301, mappool_name=mappool_name)
-    maps = crud.mappool.get_mappool_maps(q)
+    maps = crud.mappool.get_mappool_maps(q, exclude_detail)
     # if not maps:
     #     raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='图池里还没有谱面哦！')
     #     # return ResCode.raise_error(32302, mappool_name=mappool_name)

@@ -57,15 +57,15 @@ def delete_mappool(q: Mappool) -> None:
 #     return q.update(stage=t.stage, maps=maps)
 
 
-def get_mappool_maps(q: Mappool) -> List[dict]:
-
+def get_mappool_maps(q: Mappool, exclude_detail: bool) -> List[dict]:
+    detail = {'message': 'exclude'} if exclude_detail else {}
     return [{'object_id': str(i.id),
              'beatmap_id': i.beatmap_id,
              'mod_index': i.mod_index,
              'mods': i.mods,
              'stage': i.stage,
              'selector': i.selector,
-             'detail': get_beatmap(i.beatmap_id, mod=i.mods)}
+             'detail': detail or get_beatmap(i.beatmap_id, mod=i.mods)}
             for i in q.mappools]
 
 
