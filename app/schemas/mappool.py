@@ -55,8 +55,8 @@ class UpdateMappool(BaseModel):
 
 
 class MappoolOverview(CreateMappool):
-    chn_name: str
-    acronym: str
+    chn_name: str = None
+    acronym: str = None
     status: str = Field(example='Pending')
     rating: MappoolRatingCount
 
