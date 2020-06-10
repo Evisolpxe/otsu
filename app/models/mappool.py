@@ -36,7 +36,7 @@ class MappoolRating(Document):
     rating = IntField(min_value=0, max_value=5)
 
 
-class Mappool(Document):
+class Mappool(DynamicDocument):
     mappool_name = StringField(required=True, unique=True)
     host = IntField(required=True)
     recommend_elo = IntField(min_value=0, max_value=3000, default=3000)
