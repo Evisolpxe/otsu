@@ -7,7 +7,7 @@ class EloCalculator:
 
     def __init__(self, rank_dict: dict):
         self.rank_dict = rank_dict
-        self.player_elo = {i: get_user(i).current_elo for i in rank_dict.keys()}
+        self.player_elo = {i: get_user(i).latest_elo.elo for i in rank_dict.keys()}
         self.add_virtual_player()
 
     @staticmethod
@@ -62,12 +62,7 @@ class EloCalculator:
 
         elo_change_dict = {player: int(self.anti_inflate(change, d_i_list))
                            for player, change in elo_change_dict.items()}
-        return elo_change_dict
-
-
-def calc_elo(player_init_elo: dict, break_point_match: int):
-    """如果break_point为0，意味全部重新计算ELO，否则只会计算match_id之后的elo变化"""
-
+        return {'elo_change': elo_change_dict, 'player_elo': self.player_elo}
 
 
 

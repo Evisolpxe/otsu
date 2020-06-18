@@ -7,10 +7,19 @@ class EloHistory(DynamicDocument):
     season = StringField()
 
 
+class Elo(Document):
+    user_id = IntField(required=True)
+    match_id = IntField(required=True, default=-1)
+    elo = IntField(required=True)
+    difference = IntField(required=True, default=0)
+
+    match_obj = ReferenceField('Match', required=True)
+
+
 class Users(DynamicDocument):
     user_id = IntField(required=True, primary_key=True)
     raw_data = DynamicField()
     lang = StringField(default='None')
 
     elo_history = ListField(ReferenceField(EloHistory, reverse_delete_rule=PULL), default=[])
-    current_elo = IntField()
+    latest_elo = ReferenceField('Elo', reverse_delete_rule=PULL)

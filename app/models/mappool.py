@@ -4,12 +4,13 @@ import datetime
 
 
 class MappoolMap(DynamicDocument):
-    mappool = ReferenceField('Mappool', required=True, reverse_delete_rule=CASCADE)
+    mappool = ReferenceField('Mappool', required=True)
     stage = StringField(required=True)
     mods = ListField(required=True)
     beatmap_id = IntField(required=True, min_value=0)
     mod_index = IntField(required=True, min_value=1)
     selector = IntField()
+
 
 # class MappoolDetail(DynamicEmbeddedDocument):
 #     beatmap_id = IntField(required=True, min_value=0)
@@ -29,6 +30,8 @@ class MappoolComments(Document):
     reply = StringField(default='')
     timestamp = DateTimeField(default=datetime.datetime.now)
 
+    mappool = ReferenceField('Mappool', required=True)
+
 
 class MappoolRating(Document):
     mappool = ReferenceField('Mappool', required=True, unique_with='user_id')
@@ -41,12 +44,17 @@ class Mappool(DynamicDocument):
     host = IntField(required=True)
     recommend_elo = IntField(min_value=0, max_value=3000, default=3000)
     cover = IntField(default=0)
-    status = StringField(default='Pending')
+    status = StringField(default='Pending', choices=['Pending', 'Ranked', 'Overjoy'])
     description = StringField(max_length=3000, default='主办很懒所以主办什么都不写。')
 
     mappools = ListField(ReferenceField(MappoolMap, reverse_delete_rule=PULL))
     comments = ListField(ReferenceField(MappoolComments, reverse_delete_rule=PULL))
     ratings = ListField(ReferenceField(MappoolRating, reverse_delete_rule=PULL))
-    
+
     tourneys = ListField(ReferenceField('Tourney'))
     matches = ListField(ReferenceField('Match'))
+
+
+Mappool.register_delete_rule(MappoolComments, 'mappool', CASCADE)
+Mappool.register_delete_rule(MappoolRating, 'mappool', CASCADE)
+Mappool.register_delete_rule(MappoolMap, 'mappool', CASCADE)

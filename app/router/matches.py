@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Query
 
 from app import crud
 from app.schemas.matches import CreateMatch
@@ -137,3 +137,10 @@ async def delete_score(score_id: str):
         return ResCode.raise_error(33203, score_id=score_id)
     crud.matches.delete_score(score)
     return ResCode.raise_success(41203, score_id=score_id)
+
+
+@router.post('/calc/{break_point_id}',
+             summary='计算elo')
+async def calc_elo(break_point_id: int = Query(...)):
+    match = crud.matches.calc_all_elo(break_point_id)
+    return ResCode.raise_success(31200, calc_length=match)

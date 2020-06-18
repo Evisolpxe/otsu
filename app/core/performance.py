@@ -7,6 +7,20 @@ from app.models.matches import Match, EventResult, Score
 from app.core.elo import EloCalculator
 
 
+class PerformanceAlgo:
+
+    def __init__(self, match: Match):
+        self.match = match
+
+    def run(self) -> dict:
+        if self.match.tourney.performance_rule:
+            if self.match.tourney.performance_rule == 'Tourney':
+                return TourneyPerformance(self.match).main()
+            elif self.match.tourney.performance_rule == 'Solo':
+                return SoloPerformance(self.match).main()
+        return {}
+
+
 class TourneyPerformance:
 
     def __init__(self, match: Match):
@@ -28,7 +42,8 @@ class TourneyPerformance:
             for player in event.scores:
                 player: Score
                 bonus = self.win_bonus if player.team == event.win_team else 0
-                rank_points[player.user_id] = self.calc_rank_point(player.score, total_score, len(event.scores), bonus)
+                rank_points[player.user_id] = self.rank_point_limiter(
+                    self.calc_rank_point(player.score, total_score, len(event.scores), bonus))
 
             for user_id, rp in rank_points.items():
                 self.match_point[user_id] += rp
@@ -111,3 +126,14 @@ class SoloPerformance:
                 for i, x in enumerate(
                 sorted(self.match_point.items(), key=lambda x: x[1], reverse=True), 1)
                 }
+
+
+class SimplePerformance:
+
+    def __init__(self, rank_result: dict):
+        self.rank_result = rank_result
+        self.valid_match: bool = True
+        self.error_message: dict = {}
+
+    def main(self):
+        return EloCalculator(self.rank_result).main()

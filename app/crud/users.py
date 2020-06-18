@@ -5,7 +5,7 @@ from typing import List
 from fastapi import HTTPException, status
 
 from app import schemas
-from app.models.users import Users
+from app.models.users import Users, Elo
 from app.api.get import get_user_by_api
 
 
@@ -26,7 +26,9 @@ def create_user(user_id: int) -> Users:
     if not raw_data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='官网数据库中找不到此玩家。')
     current_elo = init_elo(raw_data[0].get('pp_rank'))
-    user = Users(user_id=user_id, detail=raw_data[0], current_elo=current_elo)
+    elo = Elo(user_id=user_id, elo=current_elo)
+    elo.save()
+    user = Users(user_id=user_id, detail=raw_data[0], latest_elo=elo)
     user.save()
     return user
 
