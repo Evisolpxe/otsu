@@ -5,7 +5,7 @@ from app import schemas
 from app.models.tourney import Tourney
 
 
-def get_tourney(name: str) -> Tourney.objects:
+def get_tourney(name: str) -> Tourney:
     full = Tourney.objects(tourney_name=name).first()
     acronym = Tourney.objects(acronym=name).first()
     chn = Tourney.objects(chn_name=name).first()

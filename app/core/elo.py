@@ -1,65 +1,6 @@
-from math import log, sqrt
-from collections import defaultdict
+from math import sqrt
 
-from app.models.matches import Match
-from app.core.error import ResCode
-from app.crud.users import get_user, create_user
-from app.crud.matches import get_match
-
-
-class TourneyPerformance:
-
-    def __init__(self):
-        pass
-
-
-class SoloPerformance:
-
-    def __init__(self, match: Match):
-        self.match: Match = match
-        self.valid_match: bool = True
-        self.error_message: dict = {}
-
-        self.win_bonus: int = 1
-        self.match_point: defaultdict = defaultdict(int)
-
-    def main(self) -> dict:
-        self.round_check()
-        for event in self.match.events:
-            self.num_of_player_check(event.scores)
-            player1, player2 = event.scores[0], event.scores[1]
-            if player1.passed and player2.passed:
-                if player1.score > player2.score:
-                    self.match_point[player1.user_id] += 1
-                else:
-                    self.match_point[player2.user_id] += 1
-                continue
-            elif player1.passed:
-                self.match_point[player1.user_id] += 1
-            elif player2.passed:
-                self.match_point[player2.user_id] += 1
-
-        if self.valid_match:
-            return EloCalculator(self.sorted_rank_point_dict()).main()
-        return self.error_message
-
-    def round_check(self) -> None:
-        """小于四回合不计算成绩"""
-        if len(self.match.events) < 4:
-            self.valid_match = False
-            self.error_message = ResCode.raise_error(33210)
-
-    def num_of_player_check(self, scores: list) -> None:
-        if len(scores) != 2:
-            self.valid_match = False
-            self.error_message = ResCode.raise_error(33211)
-
-    def sorted_rank_point_dict(self) -> dict:
-        # 获得玩家最终rank_point的排名。
-        return {str(x[0]): i
-                for i, x in enumerate(
-                sorted(self.match_point.items(), key=lambda x: x[1], reverse=True), 1)
-                }
+from app.crud.users import get_user
 
 
 class EloCalculator:
@@ -122,6 +63,13 @@ class EloCalculator:
         elo_change_dict = {player: int(self.anti_inflate(change, d_i_list))
                            for player, change in elo_change_dict.items()}
         return elo_change_dict
+
+
+def calc_elo(player_init_elo: dict, break_point_match: int):
+    """如果break_point为0，意味全部重新计算ELO，否则只会计算match_id之后的elo变化"""
+
+
+
 
 # A = SoloPerformance(get_match(62663926))
 # B = EloCalculator(A.main())

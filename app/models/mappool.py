@@ -47,3 +47,6 @@ class Mappool(DynamicDocument):
     mappools = ListField(ReferenceField(MappoolMap, reverse_delete_rule=PULL))
     comments = ListField(ReferenceField(MappoolComments, reverse_delete_rule=PULL))
     ratings = ListField(ReferenceField(MappoolRating, reverse_delete_rule=PULL))
+    
+    tourneys = ListField(ReferenceField('Tourney'))
+    matches = ListField(ReferenceField('Match'))

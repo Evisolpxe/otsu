@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks
 
 from app import crud
+from app.schemas.matches import CreateMatch
 
 from app.core.error import ResCode
 from app.crud.users import init_user
@@ -48,14 +49,29 @@ async def get_match(*,
              response_model_exclude_unset=True,
              )
 async def create_match(*, match_id: int,
-                       tourney_name: str = None,
-                       mappool_name: str = None,
+                       t: CreateMatch,
                        background_tasks: BackgroundTasks
                        ):
     if crud.matches.get_match(match_id):
         return ResCode.raise_error(30001, match_id=match_id)
+
     match = crud.matches.create_match(match_id)
+    if not match:
+        return ResCode.raise_error(34201, match_id=match_id)
     background_tasks.add_task(init_user, match.joined_player)
+
+    if t.mappool_name:
+        mappool = crud.mappool.get_mappool(t.mappool_name)
+        if not mappool:
+            return ResCode.raise_error(12301, mappool_name=t.mappool_name)
+        crud.matches.push_match_to_mappool(mappool, match)
+
+    if t.tourney_name:
+        tourney = crud.tourney.get_tourney(t.tourney_name)
+        if not tourney:
+            return ResCode.raise_error(32101, tourney_name=t.tourney_name)
+        crud.matches.push_match_to_tourney(tourney, match)
+
     return ResCode.raise_success(31201, match_id=match_id)
 
 
@@ -67,6 +83,40 @@ async def delete_match(*, match_id: int):
         return ResCode.raise_error(33201, match_id=match_id)
     crud.matches.delete_match(match)
     return ResCode.raise_success(41201, match_id=match_id)
+
+
+@router.post('/{match_id}/mappool',
+             summary='把比赛添加到图池，并把成绩按照图池过滤。')
+async def match_filter_by_mappool(*,
+                                  match_id: int,
+                                  mappool_name: str):
+    match = crud.matches.get_match(match_id)
+    if not match:
+        return ResCode.raise_error(33201, match_id=match_id)
+
+    mappool = crud.mappool.get_mappool(mappool_name)
+    if not mappool:
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
+
+    crud.matches.push_match_to_mappool(mappool, match)
+    return ResCode.raise_success(31221)
+
+
+@router.post('/{match_id}/tourney',
+             summary='把比赛添加到比赛，并把成绩按照比赛图池过滤。')
+async def match_filter_by_tourney(*,
+                                  match_id: int,
+                                  tourney_name: str):
+    match = crud.matches.get_match(match_id)
+    if not match:
+        return ResCode.raise_error(33201, match_id=match_id)
+
+    tourney = crud.tourney.get_tourney(tourney_name)
+    if not tourney:
+        return ResCode.raise_error(32101, tourney_name=tourney_name)
+
+    crud.matches.push_match_to_tourney(tourney, match)
+    return ResCode.raise_success(31211)
 
 
 @router.delete('/event/{event_id}',

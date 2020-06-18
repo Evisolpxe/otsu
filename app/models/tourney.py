@@ -7,12 +7,14 @@ class Tourney(DynamicDocument):
     acronym = StringField(max_length=20, unique=True)
 
     elo_coefficient = FloatField(min_value=0, max_value=1, default=1)
+    performance_rule = StringField(default='Tourney')
     description = StringField(max_length=3000)
     host = IntField(required=True)
     staffs = ListField(DictField)
     contributor = ListField(IntField)
 
     matches = ListField(ReferenceField('Match'))
+    mappools = ListField(ReferenceField('Mappool'))
 
     meta = {
         'indexes': ['tourney_name', 'chn_name', 'acronym']

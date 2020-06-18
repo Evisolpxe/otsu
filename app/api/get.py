@@ -18,9 +18,9 @@ def get_match_by_history(match_id: int) -> dict:
             retry += 1
             print(f'Connect failed, try again. Times: {retry}')
         else:
+            data = r.json()
             print(f'获取{match_id}成功。')
             break
-    data = r.json()
     # 检测返回的数据是否完整，不完整就再请求一次。
     while data['events'][0]['detail']['type'] != 'match-created':
         print('数据不完整，再次请求补全。')
@@ -38,7 +38,6 @@ def get_map_by_api(map_id: int, mods: int = 0) -> dict:
     while retry < 5:
         try:
             r = requests.get(f"{BASE_URL}/get_beatmaps?k={TOKEN}&b={map_id}&mods={mods}")
-
         except ConnectTimeout as err:
             retry += 1
             print(f'Connect failed, try again. Times: {retry}')

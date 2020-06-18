@@ -3,8 +3,10 @@ from mongoengine import *
 from app.models.mappool import MappoolMap
 
 
-class EloChange(EmbeddedDocument):
+class EloChange(Document):
     user_id = IntField(required=True)
+    match_id = IntField(required=True)
+    elo = IntField(required=True)
     value = IntField(required=True)
 
 
@@ -57,7 +59,7 @@ class Match(DynamicDocument):
     # mappool = ListField(ReferenceField(MappoolMap))
 
     events = ListField(ReferenceField('EventResult', reverse_delete_rule=PULL))
-    elo_change = EmbeddedDocumentListField(EloChange)
+    elo_change = ListField(EloChange)
 
     joined_player = ListField(IntField(), default=[])
     referee = IntField(default=0)
@@ -66,3 +68,8 @@ class Match(DynamicDocument):
 
 EventResult.register_delete_rule(Score, 'event', CASCADE)
 Match.register_delete_rule(EventResult, 'match', CASCADE)
+
+
+class Qualifier(DynamicDocument):
+    """定级五场才能出分"""
+    pass
