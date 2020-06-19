@@ -56,12 +56,13 @@ async def create_mappool(*,
             )
 async def get_mappool(*,
                       mappool_name: str = Path(..., description='图池名称，只支持全称查询。')
-                      ) -> schemas.mappool.MappoolOverview:
+                      ) -> dict:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
         # return ResCode.raise_error(32301, mappool_name=mappool_name)
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
-    overview = json.loads(q.to_json())
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
+    overview = {'mappool_name': q.mappool_name, 'host': q.host, 'cover': q.cover, 'status': q.status,
+                'description': q.description, 'stages': [i.stage for i in q.stages], 'recommend_elo': q.recommend_elo}
     overview.update({'rating': crud.mappool.calc_ratings(q.ratings)})
     return overview
 
@@ -93,6 +94,70 @@ async def delete_mappool(*,
     return ResCode.raise_success(41301, mappool_name=mappool_name)
 
 
+@router.get('/{mappool_name}/stage',
+            summary='获取所有图池Stage')
+async def get_all_mappool_stage(*,
+                                mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                                exclude_detail: bool = True
+                                ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
+    return crud.mappool.get_all_mappool_stage(q, exclude_detail)
+
+
+@router.post('/{mappool_name}/stage',
+             summary='创建图池stage。')
+async def create_mappool_stage(*,
+                               mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                               t: schemas.mappool.MappoolStage
+                               ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
+    stage = crud.mappool.get_mappool_stage(q, t.stage)
+    if stage:
+        return ResCode.raise_error(12305, stage=stage, mappool_name=mappool_name)
+    stage = crud.mappool.create_mappool_stage(q, t)
+    crud.mappool.push_stage_to_mappool(q, stage)
+    return ResCode.raise_success(11305, mappool_name=mappool_name, stage=t.stage)
+
+
+@router.get('/{mappool_name}/stage/{stage}',
+            summary='获取图池Stage。',
+            response_model=List[schemas.mappool.MappoolMap])
+async def get_mappool_stage(*,
+                            mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                            stage: str = Path(..., description='Stage名称'),
+                            exclude_detail: bool = True
+                            ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
+
+    stage = crud.mappool.get_mappool_stage(q, stage)
+    if not stage:
+        return ResCode.raise_error(32305, stage=stage)
+    return
+
+
+@router.delete('/{mappool_name}/stage/{stage}',
+               summary='删除图池stage。')
+async def delete_mappool_stage(*,
+                               mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                               stage: str = Path(..., description='Stage名称')
+                               ):
+    q = crud.mappool.get_mappool(mappool_name)
+    if not q:
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
+
+    stage = crud.mappool.get_mappool_stage(q, stage)
+    if not stage:
+        return ResCode.raise_error(32305, stage=stage)
+    crud.mappool.delete_mappool_stage(stage)
+    return ResCode.raise_success(41305, stage=stage, mappool_name=mappool_name)
+
+
 @router.get('/{mappool_name}/maps',
             summary='获取图池全部谱面。',
             status_code=status.HTTP_200_OK,
@@ -119,12 +184,16 @@ async def get_mappool_maps(*,
              )
 async def create_mappool_maps(*,
                               mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                              stage: str = Query(..., description='上传至的图池。'),
                               t: List[schemas.mappool.MappoolMap]
                               ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
         return ResCode.raise_error(32301, mappool_name=mappool_name)
-    crud.mappool.create_mappool_map(q, t)
+    target_stage = crud.mappool.get_mappool_stage(q, stage)
+    if not stage:
+        return ResCode.raise_error(32305, stage=stage)
+    crud.mappool.create_mappool_map(q, t, target_stage)
     return ResCode.raise_success(11302, mappool_name=mappool_name)
 
 
@@ -167,7 +236,6 @@ async def get_mappool_map(*,
             'beatmap_id': beatmap.beatmap_id,
             'mod_index': beatmap.mod_index,
             'mods': beatmap.mods,
-            'stage': beatmap.stage,
             'selector': beatmap.selector}
 
 

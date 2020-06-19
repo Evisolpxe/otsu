@@ -30,7 +30,7 @@ class MappoolCommentOut(MappoolComment):
 class CreateMappool(BaseModel):
     mappool_name: str = Field(example='OsuChineseLeagueR Season11')
     host: int = Field(..., description='图池的创建者，无法修改。', example=245276)
-    recommend_elo: int = Field(..., description='创建者推荐适合的elo范围。', ge=0, le=3000, example=1000)
+    recommend_elo: List[int] = Field(..., description='创建者推荐适合的elo范围。', example=[600,1000])
     cover: int = Field(..., description='主页现实的图池封面，初始为0，在第一次传图后设为图池第一张图，之后可以自己设置。')
     description: str = Field(..., description='创建者对图池的简介。',
                              example='## This is a description. #### You can write it by Markdown.')
@@ -45,9 +45,7 @@ class GetMappool(CreateMappool):
 
 class UpdateMappool(BaseModel):
     mappool_name: str = None
-    acronym: str = None
-    chn_name: str = None
-    recommend_elo: int = Field(None, description='创建者推荐适合的elo范围。', ge=0, le=3000, example=1000)
+    recommend_elo: List[int] = Field(None, description='创建者推荐适合的elo范围。', example=[600, 1000])
     cover: int = Field(None, description='主页现实的图池封面，初始为0，在第一次传图后设为图池第一张图，之后可以自己设置。')
     description: str = Field(None, description='创建者对图池的简介。',
                              example='## This is a description. #### You can write it by Markdown.')
@@ -55,9 +53,8 @@ class UpdateMappool(BaseModel):
 
 
 class MappoolOverview(CreateMappool):
-    chn_name: str = None
-    acronym: str = None
     status: str = Field(example='Pending')
+    stages: List[str] = None
     rating: MappoolRatingCount
 
 
@@ -66,9 +63,13 @@ class MappoolMap(BaseModel):
     mod_index: int = Field(..., example=1, ge=1)
     selector: int = Field(None, example=245276)
     mods: List[str] = Field(..., example=['DT'])
-    stage: str = Field(..., example='Ro32')
 
 
 class MappoolMapOut(MappoolMap):
     object_id: str
     detail: dict
+
+
+class MappoolStage(BaseModel):
+    stage: str = Field(..., example='SemiFinal')
+    recommend_elo: List[int] = Field(..., example=[600, 1000])

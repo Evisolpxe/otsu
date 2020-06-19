@@ -4,24 +4,23 @@ import datetime
 
 
 class MappoolMap(DynamicDocument):
-    mappool = ReferenceField('Mappool', required=True)
-    stage = StringField(required=True)
-    mods = ListField(required=True)
     beatmap_id = IntField(required=True, min_value=0)
+    mods = ListField(required=True)
     mod_index = IntField(required=True, min_value=1)
     selector = IntField()
 
-
-# class MappoolDetail(DynamicEmbeddedDocument):
-#     beatmap_id = IntField(required=True, min_value=0)
-#     mod_index = IntField(required=True, min_value=1)
-#     selector = IntField()
+    mappool = ReferenceField('Mappool', required=True)
+    stage = ReferenceField('MappoolStage', required=True)
 
 
-# class MappoolStage(DynamicDocument):
-#     mappool = ReferenceField('Mappool', required=True, unique_with='stage')
-#     stage = StringField(required=True)
-#     mods = DynamicField(required=True)
+class MappoolStage(DynamicDocument):
+    mappool = ReferenceField('Mappool', required=True, unique_with='stage')
+    maps = ListField(ReferenceField(MappoolMap, reverse_delete_rule=PULL))
+    stage = StringField(required=True)
+    recommend_elo = ListField(IntField())
+
+    tourneys = ListField(ReferenceField('Tourney'))
+    matches = ListField(ReferenceField('Match'))
 
 
 class MappoolComments(Document):
@@ -42,19 +41,17 @@ class MappoolRating(Document):
 class Mappool(DynamicDocument):
     mappool_name = StringField(required=True, unique=True)
     host = IntField(required=True)
-    recommend_elo = IntField(min_value=0, max_value=3000, default=3000)
     cover = IntField(default=0)
     status = StringField(default='Pending', choices=['Pending', 'Ranked', 'Overjoy'])
     description = StringField(max_length=3000, default='主办很懒所以主办什么都不写。')
+    recommend_elo = ListField(IntField())
 
-    mappools = ListField(ReferenceField(MappoolMap, reverse_delete_rule=PULL))
+    stages = ListField(ReferenceField(MappoolStage, reverse_delete_rule=PULL))
     comments = ListField(ReferenceField(MappoolComments, reverse_delete_rule=PULL))
     ratings = ListField(ReferenceField(MappoolRating, reverse_delete_rule=PULL))
 
-    tourneys = ListField(ReferenceField('Tourney'))
-    matches = ListField(ReferenceField('Match'))
 
-
+MappoolStage.register_delete_rule(MappoolMap, 'stage', CASCADE)
 Mappool.register_delete_rule(MappoolComments, 'mappool', CASCADE)
 Mappool.register_delete_rule(MappoolRating, 'mappool', CASCADE)
-Mappool.register_delete_rule(MappoolMap, 'mappool', CASCADE)
+Mappool.register_delete_rule(MappoolStage, 'mappool', CASCADE)

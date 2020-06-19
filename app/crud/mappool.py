@@ -7,14 +7,14 @@ from fastapi import HTTPException, status
 
 from app import schemas
 from app.crud.maps import get_beatmap
-from app.models.mappool import Mappool, MappoolMap, MappoolRating, MappoolComments
+from app.models.mappool import Mappool, MappoolMap, MappoolRating, MappoolComments, MappoolStage
 
 
-def get_all_mappool() -> List[Mappool.objects]:
+def get_all_mappool() -> List[Mappool]:
     return Mappool.objects().all()
 
 
-def get_mappool(mappool_name: str) -> Mappool.objects:
+def get_mappool(mappool_name: str) -> Mappool:
     return Mappool.objects(mappool_name=mappool_name).first()
 
 
@@ -48,13 +48,34 @@ def delete_mappool(q: Mappool) -> None:
     return q.delete()
 
 
-# def get_mappool_stage(q: Mappool, t: schemas.mappool.CreateMappoolMaps):
-#     return MappoolStage.objects(mappool=q.id, stage=t.stage).first()
-#
-#
-# def update_mappool_stage(q: MappoolStage, t: schemas.mappool.CreateMappoolMaps):
-#     maps = [MappoolDetail(**dict(i)) for i in t.maps]
-#     return q.update(stage=t.stage, maps=maps)
+def get_all_mappool_stage(q: Mappool, exclude_detail: bool):
+    detail = {'message': 'exclude'} if exclude_detail else {}
+    return {stage.stage: [{'object_id': str(i.id),
+                           'beatmap_id': i.beatmap_id,
+                           'mod_index': i.mod_index,
+                           'mods': i.mods,
+                           'stage': stage.stage,
+                           'selector': i.selector,
+                           'detail': detail or get_beatmap(i.beatmap_id, mod=i.mods)}
+                          for i in stage.maps] for stage in q.stages}
+
+
+def get_mappool_stage(q: Mappool, stage: str) -> MappoolStage:
+    return MappoolStage.objects(mappool=q.id, stage=stage).first()
+
+
+def create_mappool_stage(q: Mappool, t: schemas.mappool.MappoolStage):
+    stage = MappoolStage(mappool=q, stage=t.stage, recommend_elo=t.recommend_elo)
+    stage.save()
+    return stage
+
+
+def update_mappool_stage(q: MappoolStage, t: schemas.mappool.MappoolStage):
+    return q.update(mappool=q, stage=t.stage, recommend_elo=t.recommend_elo)
+
+
+def delete_mappool_stage(q: MappoolStage):
+    return q.delete()
 
 
 def get_mappool_maps(q: Mappool, exclude_detail: bool) -> List[dict]:
@@ -63,10 +84,10 @@ def get_mappool_maps(q: Mappool, exclude_detail: bool) -> List[dict]:
              'beatmap_id': i.beatmap_id,
              'mod_index': i.mod_index,
              'mods': i.mods,
-             'stage': i.stage,
+             'stage': stage.stage,
              'selector': i.selector,
              'detail': detail or get_beatmap(i.beatmap_id, mod=i.mods)}
-            for i in q.mappools]
+            for stage in q.stages for i in stage.maps]
 
 
 def get_mappool_map(q: Mappool, beatmap_id: int) -> MappoolMap:
@@ -85,16 +106,16 @@ def get_mappool_map_by_id(object_id: MappoolMap.id):
     return MappoolMap.objects(id=object_id).first()
 
 
-def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap]) -> dict:
+def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap], stage: MappoolStage) -> dict:
     try:
         map_list = [i.beatmap_id for i in MappoolMap.objects(beatmap_id__in=[i.beatmap_id for i in t]).all()]
         counts = 0
         for i in t:
             if i.beatmap_id not in map_list:
-                beatmap = MappoolMap(mappool=q.id, stage=i.stage, beatmap_id=i.beatmap_id, mods=i.mods,
+                beatmap = MappoolMap(mappool=q.id, stage=stage, beatmap_id=i.beatmap_id, mods=i.mods,
                                      selector=i.selector, mod_index=i.mod_index)
                 beatmap.save()
-                push_map_to_mappool(q, beatmap)
+                push_map_to_mappool_stage(stage, beatmap)
                 counts += 1
         return {'total_map': len(map_list), 'uploaded': counts, 'mappool_name': q.mappool_name}
     except (DuplicateKeyError, NotUniqueError) as e:
@@ -104,8 +125,12 @@ def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap]) -> dict:
     #     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='谱面Index似乎重复了，请检查一下喔！')
 
 
-def push_map_to_mappool(q: Mappool, beatmap: MappoolMap) -> Mappool:
-    return q.update(push__mappools=beatmap.id)
+def push_map_to_mappool_stage(q: MappoolStage, beatmap: MappoolMap) -> Mappool:
+    return q.update(push__maps=beatmap.id)
+
+
+def push_stage_to_mappool(q: Mappool, stage: MappoolStage):
+    return q.update(push__stages=stage)
 
 
 def get_mappool_rating(q: Mappool) -> schemas.mappool.MappoolRating:

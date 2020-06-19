@@ -15,7 +15,7 @@ class Tourney(DynamicDocument):
     contributor = ListField(IntField)
 
     matches = ListField(ReferenceField('Match'))
-    mappools = ListField(ReferenceField('Mappool'))
+    mappools = ListField(ReferenceField('MappoolStage'))
 
     meta = {
         'indexes': ['tourney_name', 'chn_name', 'acronym']
