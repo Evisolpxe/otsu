@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, status, Query, Path, HTTPException, Response
+from fastapi import APIRouter, status, Query, Path, HTTPException, Response, BackgroundTasks
 
 from app import crud, schemas
 from app.models.mappool import MappoolComments
@@ -185,7 +185,8 @@ async def get_mappool_maps(*,
 async def create_mappool_maps(*,
                               mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                               stage: str = Query(..., description='上传至的图池。'),
-                              t: List[schemas.mappool.MappoolMap]
+                              t: List[schemas.mappool.MappoolMap],
+                              background_task: BackgroundTasks
                               ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
@@ -194,6 +195,8 @@ async def create_mappool_maps(*,
     if not stage:
         return ResCode.raise_error(32305, stage=stage)
     crud.mappool.create_mappool_map(q, t, target_stage)
+    for beatmap in t:
+        background_task.add_task(crud.maps.get_beatmap, beatmap.beatmap_id, beatmap.mods)
     return ResCode.raise_success(11302, mappool_name=mappool_name)
 
 
