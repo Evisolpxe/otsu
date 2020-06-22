@@ -10,6 +10,12 @@ from app.crud.maps import get_beatmap
 from app.models.mappool import Mappool, MappoolMap, MappoolRating, MappoolComments, MappoolStage
 
 
+def format_mappool_obj_to_map_overview(q: Mappool) -> dict:
+    return {'mappool_name': q.mappool_name, 'host': q.host, 'cover': q.cover, 'status': q.status,
+            'description': q.description, 'stages': [i.stage for i in q.stages],
+            'recommend_elo': q.recommend_elo}
+
+
 def get_all_mappool() -> List[Mappool]:
     return Mappool.objects().all()
 

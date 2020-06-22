@@ -16,7 +16,7 @@ router = APIRouter()
             response_model=List[schemas.mappool.MappoolOverview])
 async def get_all_mappool(*,
                           pagination: bool = False, page: int = 0, per_page: int = 30
-                          ) -> List[schemas.mappool.MappoolOverview]:
+                          ) -> List[dict]:
     q_list = crud.mappool.get_all_mappool()
     if not q_list:
         # return ResCode.raise_error(32311)
@@ -29,7 +29,7 @@ async def get_all_mappool(*,
 
     q_overview = []
     for q in q_list:
-        overview = json.loads(q.to_json())
+        overview = crud.mappool.format_mappool_obj_to_map_overview(q)
         overview.update({'rating': crud.mappool.calc_ratings(q.ratings)})
         q_overview.append(overview)
     return q_overview
@@ -61,8 +61,7 @@ async def get_mappool(*,
     if not q:
         # return ResCode.raise_error(32301, mappool_name=mappool_name)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应图池哦！')
-    overview = {'mappool_name': q.mappool_name, 'host': q.host, 'cover': q.cover, 'status': q.status,
-                'description': q.description, 'stages': [i.stage for i in q.stages], 'recommend_elo': q.recommend_elo}
+    overview = crud.mappool.format_mappool_obj_to_map_overview(q)
     overview.update({'rating': crud.mappool.calc_ratings(q.ratings)})
     return overview
 
