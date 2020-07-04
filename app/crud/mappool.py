@@ -1,4 +1,5 @@
 import json
+import string
 from typing import List
 
 from pymongo.errors import DuplicateKeyError
@@ -10,18 +11,24 @@ from app.crud.maps import get_beatmap
 from app.models.mappool import Mappool, MappoolMap, MappoolRating, MappoolComments, MappoolStage
 
 
+def acronym_filter(acronym: str) -> str:
+    str_filter = string.ascii_lowercase + string.digits + '_'
+    return ''.join([i for i in acronym.lower().replace(' ', '_') if i in str_filter])
+
+
 def format_mappool_obj_to_map_overview(q: Mappool) -> dict:
     return {'mappool_name': q.mappool_name, 'host': q.host, 'cover': q.cover, 'status': q.status,
             'description': q.description, 'stages': [i.stage for i in q.stages],
-            'recommend_elo': q.recommend_elo}
+            'recommend_elo': q.recommend_elo, 'acronym': q.acronym}
 
 
 def get_all_mappool() -> List[Mappool]:
     return Mappool.objects().all()
 
 
-def get_mappool(mappool_name: str) -> Mappool:
-    return Mappool.objects(mappool_name=mappool_name).first()
+def get_mappool(name: str) -> Mappool:
+    return Mappool.objects(mappool_name=name).first() or \
+           Mappool.objects(acronym=acronym_filter(name)).first()
 
 
 def calc_ratings(rating_list: List[MappoolRating]) -> schemas.mappool.MappoolRating:
@@ -37,6 +44,7 @@ def calc_ratings(rating_list: List[MappoolRating]) -> schemas.mappool.MappoolRat
 
 
 def create_mappool(t: schemas.mappool.CreateMappool) -> Mappool:
+    t.acronym = acronym_filter(t.acronym)
     try:
         mappool = Mappool(**dict(t))
         mappool.save()
@@ -46,6 +54,7 @@ def create_mappool(t: schemas.mappool.CreateMappool) -> Mappool:
 
 
 def update_mappool(q: Mappool, t: schemas.mappool.UpdateMappool) -> Mappool:
+    t.acronym = acronym_filter(t.acronym)
     t = {k: v for k, v in dict(t).items() if v}
     return q.update(**t)
 

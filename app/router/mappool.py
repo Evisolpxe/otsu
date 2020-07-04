@@ -42,8 +42,9 @@ async def create_mappool(*,
                          t: schemas.mappool.CreateMappool
                          ) -> schemas.RaiseInfo:
     q = crud.mappool.get_mappool(t.mappool_name)
-    if q:
-        return ResCode.raise_error(12301, mappool_name=t.mappool_name)
+    acronym = crud.mappool.get_mappool(t.acronym)
+    if q or acronym:
+        return ResCode.raise_error(12301, mappool_name=t.mappool_name, acronym=t.acronym)
     crud.mappool.create_mappool(t)
     return ResCode.raise_success(11301, mappool_name=t.mappool_name)
 

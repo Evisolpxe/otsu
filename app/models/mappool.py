@@ -40,6 +40,7 @@ class MappoolRating(Document):
 
 class Mappool(DynamicDocument):
     mappool_name = StringField(required=True, unique=True)
+    acronym = StringField(required=True, unique=True)
     host = IntField(required=True)
     cover = IntField(default=0)
     status = StringField(default='Pending', choices=['Pending', 'Ranked', 'Overjoy'])
