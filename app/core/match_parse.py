@@ -28,13 +28,13 @@ class MatchParser:
                              'mods': score.get('mods'),
                              'score': score.get('score'),
                              'max_combo': score.get('max_combo'),
-                             'slot': score.get('multiplayer')['slot'],
-                             'team': score.get('multiplayer')['team'],
-                             'passed': score.get('multiplayer')['pass']}
+                             'slot': score.get('match', score.get('multiplayer'))['slot'],  # ppysb改了
+                             'team': score.get('match', score.get('multiplayer'))['team'],
+                             'passed': score.get('match', score.get('multiplayer'))['pass']}
                             for score in i.get('game').get('scores')],
                  'beatmap_id': i.get('game')['beatmap'].get('id', 0)
                  } for i in self.match_data.get('events')
-                if i["detail"]["type"] == "other" and len(i['game']['scores']) >= 2
+                if i["detail"]["type"] == "other" and len(i.get('game').get('scores', [])) >= 2
                 ]
 
     def to_db(self):

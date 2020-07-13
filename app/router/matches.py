@@ -48,22 +48,25 @@ async def get_match(*,
              summary='添加对局。',
              response_model_exclude_unset=True,
              )
-async def create_match(*, match_id: int,
+async def create_match(*,
+                       match_id: int,
                        t: CreateMatch,
                        background_tasks: BackgroundTasks
                        ):
     if crud.matches.get_match(match_id):
-        return ResCode.raise_error(30001, match_id=match_id)
+        return ResCode.raise_error(32201, match_id=match_id)
 
-    match = crud.matches.create_match(match_id)
-    if not match:
+    match_data = crud.matches.create_match(match_id)
+    if not match_data:
         return ResCode.raise_error(34201, match_id=match_id)
-    background_tasks.add_task(init_user, match.joined_player)
+
+    if t.mappool_name or t.tourney_name:
+        match = crud.matches.parse_match(match_id, match_data)
 
     if t.mappool_name:
         mappool = crud.mappool.get_mappool(t.mappool_name)
         if not mappool:
-            return ResCode.raise_error(12301, mappool_name=t.mappool_name)
+            return ResCode.raise_error(32301, mappool_name=t.mappool_name)
         crud.matches.push_match_to_mappool(mappool, match)
 
     if t.tourney_name:
@@ -71,6 +74,8 @@ async def create_match(*, match_id: int,
         if not tourney:
             return ResCode.raise_error(32101, tourney_name=t.tourney_name)
         crud.matches.push_match_to_tourney(tourney, match)
+
+    background_tasks.add_task(init_user, match.joined_player)
 
     return ResCode.raise_success(31201, match_id=match_id)
 

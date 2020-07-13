@@ -26,8 +26,11 @@ def create_match(match_id: int) -> Match or None:
         match.save()
     else:
         data = match_data.data
+    return data
 
-    MatchParser(match_id, data)
+
+def parse_match(match_id: int, match_data: dict) -> Match:
+    MatchParser(match_id, match_data)
     return Match.objects(match_id=match_id).first()
 
 
@@ -52,7 +55,8 @@ def delete_score(score: Score):
 
 
 def push_match_to_tourney(tourney: Tourney, match: Match):
-    maps = [beatmap.beatmap_id for mappool in tourney for beatmap in mappool.mappools]
+    # Tourney的mappools存的是stage
+    maps = [beatmap.beatmap_id for mappool in tourney for beatmap in mappool.maps]
     for event in match:
         if event.beatmap_id not in maps:
             event.delete()
@@ -60,8 +64,9 @@ def push_match_to_tourney(tourney: Tourney, match: Match):
 
 
 def push_match_to_mappool(mappool: Mappool, match: Match):
-    maps = [beatmap.beatmap_id for beatmap in mappool.mappools]
-    for event in match:
+    # 自动检测图池所有stage的谱面
+    maps = [beatmap.beatmap_id for stage in mappool.stages for beatmap in stage.maps]
+    for event in match.events:
         if event.beatmap_id not in maps:
             event.delete()
     return mappool.update(push__matches=match)

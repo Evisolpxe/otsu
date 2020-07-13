@@ -63,7 +63,7 @@ def delete_mappool(q: Mappool) -> None:
     return q.delete()
 
 
-def get_all_mappool_stage(q: Mappool, exclude_detail: bool):
+def get_all_mappool_stage_detail(q: Mappool, exclude_detail: bool):
     detail = {'message': 'exclude'} if exclude_detail else {}
     return {stage.stage: [{'object_id': str(i.id),
                            'beatmap_id': i.beatmap_id,
@@ -77,6 +77,25 @@ def get_all_mappool_stage(q: Mappool, exclude_detail: bool):
 
 def get_mappool_stage(q: Mappool, stage: str) -> MappoolStage:
     return MappoolStage.objects(mappool=q.id, stage=stage).first()
+
+
+def get_mappool_stage_detail(q: Mappool, stage: str, exclude_detail: bool):
+    detail = {'message': 'exclude'} if exclude_detail else {}
+    s = get_mappool_stage(q, stage)
+    return {'stage': s.stage,
+            'maps': [{'object_id': str(i.id),
+                      'beatmap_id': i.beatmap_id,
+                      'mod_index': i.mod_index,
+                      'mods': i.mods,
+                      'stage': s.stage,
+                      'selector': i.selector,
+                      'detail': detail or get_beatmap(i.beatmap_id, mod=i.mods)}
+                     for i in s.maps],
+            'mappool': s.mappool.name,
+            'recommend_elo': s.recommend_elo,
+            'tourneys': [i.tourney_name for i in s.tourneys],
+            'matches': [i.match_id for i in s.matches]
+            }
 
 
 def create_mappool_stage(q: Mappool, t: schemas.mappool.MappoolStage):

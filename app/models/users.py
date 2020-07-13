@@ -1,3 +1,4 @@
+import datetime
 from mongoengine import *
 
 
@@ -5,6 +6,7 @@ class EloHistory(DynamicDocument):
     user_id = IntField(required=True)
     elo = IntField(required=True)
     season = StringField()
+    add_time = DateTimeField(default=datetime.datetime.now)
 
 
 class Elo(Document):
@@ -13,7 +15,7 @@ class Elo(Document):
     elo = IntField(required=True)
     difference = IntField(required=True, default=0)
 
-    match_obj = ReferenceField('Match', required=True)
+    match_obj = ReferenceField('Match')
 
 
 class Users(DynamicDocument):

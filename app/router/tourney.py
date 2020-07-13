@@ -10,15 +10,13 @@ router = APIRouter()
 
 @router.get('/{tourney_name}',
             summary='获取比赛。',
-            status_code=status.HTTP_200_OK,
-            response_model=schemas.tourney.TourneyOut,
-            response_model_exclude_unset=True)
+            status_code=status.HTTP_200_OK)
 async def get_tourney(*,
                       name: str = Query(..., description='比赛名称，支持中文名、缩写、全称。')
                       ) -> schemas.tourney.TourneyOut:
     q = crud.tourney.get_tourney(name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='没有找到对应比赛哦！')
+        return ResCode.raise_error(32101, name=name)
     return json.loads(q.to_json())
 
 
@@ -32,8 +30,28 @@ async def create_tourney(*,
         or crud.tourney.get_tourney(name=t.acronym) \
         or crud.tourney.get_tourney(name=t.chn_name)
     if q:
-        return ResCode.raise_error(12101, info={'tourney_name': q.tourney_name,
-                                                'acronym': q.acronym,
-                                                'chn_name': q.chn_name})
+        return ResCode.raise_error(12101,
+                                   tourney_name=q.tourney_name,
+                                   acronym=q.acronym,
+                                   chn_name=q.chn_name)
     crud.tourney.create_tourney(t)
     return ResCode.raise_success(11101, tourney_name=t.tourney_name, host=t.host)
+
+
+@router.post('/{tourney_name}/',
+             summary='将某个MappoolStage添加至比赛。',
+             status_code=status.HTTP_201_CREATED)
+async def add_stage_to_tourney(*,
+                               t: schemas.tourney.AddTourneyMappoolStage
+                               ) -> schemas.RaiseInfo:
+    tourney = crud.tourney.get_tourney(t.tourney_name)
+    if not tourney:
+        return ResCode.raise_error(32101, tourney_name=t.tourney_name, )
+    q = crud.mappool.get_mappool(t.mappool_name)
+    if not q:
+        return ResCode.raise_error(12301, mappool_name=t.mappool_name)
+    stage = crud.mappool.get_mappool_stage(q, t.stage)
+    if not stage:
+        return ResCode.raise_error(32305, stage=stage)
+    crud.tourney.add_mappool_stage_to_tourney(tourney, stage)
+    return ResCode.raise_success(11102, tourney=t.tourney_name, stage=t.stage)

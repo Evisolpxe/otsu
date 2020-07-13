@@ -37,13 +37,13 @@ async def create_user(*,
     return ResCode.raise_success(11501, user_id=user_id)
 
 
-@router.post('/{user_id}/inherit',
-             summary='继承上个赛季成绩。')
-async def inherit_elo(*,
-                      t: schemas.users.InheritElo
-                      ):
-    user = crud.users.get_user(t.user_id)
-    if user:
-        return ResCode.raise_error(12501, user_id=t.user_id)
-    user.update(elo_history=dict(t), current_elo=-1)
-    return ResCode.raise_success(21501, user_id=t.user_id)
+# @router.post('/{user_id}/inherit',
+#              summary='继承上个赛季成绩。')
+# async def inherit_elo(*,
+#                       t: schemas.users.InheritElo
+#                       ):
+#     user = crud.users.get_user(t.user_id)
+#     if user:
+#         return ResCode.raise_error(12501, user_id=t.user_id)
+#     user.update(elo_history=dict(t), current_elo=-1)
+#     return ResCode.raise_success(21501, user_id=t.user_id)

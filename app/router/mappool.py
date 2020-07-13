@@ -95,7 +95,7 @@ async def delete_mappool(*,
 
 
 @router.get('/{mappool_name}/stage',
-            summary='获取所有图池Stage')
+            summary='获取所有图池Stage详细信息。')
 async def get_all_mappool_stage(*,
                                 mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                                 exclude_detail: bool = True
@@ -103,7 +103,7 @@ async def get_all_mappool_stage(*,
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
         return ResCode.raise_error(32301, mappool_name=mappool_name)
-    return crud.mappool.get_all_mappool_stage(q, exclude_detail)
+    return crud.mappool.get_all_mappool_stage_detail(q, exclude_detail)
 
 
 @router.post('/{mappool_name}/stage',
@@ -124,8 +124,7 @@ async def create_mappool_stage(*,
 
 
 @router.get('/{mappool_name}/stage/{stage}',
-            summary='获取图池Stage。',
-            response_model=List[schemas.mappool.MappoolMap])
+            summary='获取图池Stage。')
 async def get_mappool_stage(*,
                             mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
                             stage: str = Path(..., description='Stage名称'),
@@ -135,10 +134,10 @@ async def get_mappool_stage(*,
     if not q:
         return ResCode.raise_error(32301, mappool_name=mappool_name)
 
-    stage = crud.mappool.get_mappool_stage(q, stage)
+    s = crud.mappool.get_mappool_stage(q, stage)
     if not stage:
         return ResCode.raise_error(32305, stage=stage)
-    return
+    return s
 
 
 @router.delete('/{mappool_name}/stage/{stage}',

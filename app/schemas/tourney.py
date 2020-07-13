@@ -16,3 +16,9 @@ class Tourney(BaseModel):
 class TourneyOut(Tourney):
     staffs: List[int]
     contributor: List[int]
+
+
+class AddTourneyMappoolStage(BaseModel):
+    tourney_name: str = Field(..., example='oclr_s4')
+    mappool_name: str = Field(..., example='oclr_s4')
+    stage: str = Field(..., example='Final')
