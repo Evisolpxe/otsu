@@ -47,6 +47,7 @@ async def get_match(*,
 @router.post('/{match_id}',
              summary='添加对局。',
              response_model_exclude_unset=True,
+             deprecated=True
              )
 async def create_match(*,
                        match_id: int,
@@ -91,37 +92,67 @@ async def delete_match(*, match_id: int):
 
 
 @router.post('/{match_id}/mappool',
-             summary='把比赛添加到图池，并把成绩按照图池过滤。')
+             summary='把对局添加到图池，并把成绩按照图池过滤。')
 async def match_filter_by_mappool(*,
-                                  match_id: int,
-                                  mappool_name: str):
-    match = crud.matches.get_match(match_id)
-    if not match:
-        return ResCode.raise_error(33201, match_id=match_id)
+                                  match_id: int = Query(...),
+                                  mappool_name: str = Query(...),
+                                  stage: str = Query(..., description='Stage名称'),
+                                  background_tasks: BackgroundTasks):
+    if crud.matches.get_match(match_id):
+        return ResCode.raise_error(32201, match_id=match_id)
+
+    match_data = crud.matches.create_match(match_id)
+    if not match_data:
+        return ResCode.raise_error(34201, match_id=match_id)
 
     mappool = crud.mappool.get_mappool(mappool_name)
     if not mappool:
         return ResCode.raise_error(32301, mappool_name=mappool_name)
 
-    crud.matches.push_match_to_mappool(mappool, match)
-    return ResCode.raise_success(31221)
+    s = crud.mappool.get_mappool_stage(mappool, stage)
+    if not s:
+        return ResCode.raise_error(32305, stage=stage)
+
+    match = crud.matches.parse_match(match_id, match_data)
+    r = crud.matches.push_match_to_mappool(s, match)
+    if r.get('total_events') == r.get('removed_events'):
+        crud.matches.delete_match(match)
+        return ResCode.raise_error(32211)
+    background_tasks.add_task(init_user, match.joined_player)
+
+    return ResCode.raise_success(31221, **r)
 
 
 @router.post('/{match_id}/tourney',
-             summary='把比赛添加到比赛，并把成绩按照比赛图池过滤。')
+             summary='把对局添加到比赛，并把成绩按照比赛图池过滤。')
 async def match_filter_by_tourney(*,
                                   match_id: int,
-                                  tourney_name: str):
-    match = crud.matches.get_match(match_id)
-    if not match:
-        return ResCode.raise_error(33201, match_id=match_id)
+                                  tourney_name: str,
+                                  background_tasks: BackgroundTasks):
+    if crud.matches.get_match(match_id):
+        return ResCode.raise_error(32201, match_id=match_id)
+
+    match_data = crud.matches.create_match(match_id)
+    if not match_data:
+        return ResCode.raise_error(34201, match_id=match_id)
 
     tourney = crud.tourney.get_tourney(tourney_name)
     if not tourney:
         return ResCode.raise_error(32101, tourney_name=tourney_name)
 
-    crud.matches.push_match_to_tourney(tourney, match)
-    return ResCode.raise_success(31211)
+    match = crud.matches.parse_match(match_id, match_data)
+    r = crud.matches.push_match_to_tourney(tourney, match)
+    # 没有任何可用图池时，删除比赛。
+    if r.get('total_events') == r.get('removed_events'):
+        crud.matches.delete_match(match)
+        return ResCode.raise_error(32211)
+
+    # 初始化第一次参加比赛的玩家数据，必须初始化后才能计算ELO。
+    init_user(match.joined_player)
+    # 后台任务刷新所有参赛用户数据。
+    background_tasks.add_task(init_user, match.joined_player, refresh=True)
+
+    return ResCode.raise_success(31211, **r)
 
 
 @router.delete('/event/{event_id}',

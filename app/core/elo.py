@@ -7,7 +7,7 @@ class EloCalculator:
 
     def __init__(self, rank_dict: dict):
         self.rank_dict = rank_dict
-        self.player_elo = {i: get_user(i).latest_elo.elo for i in rank_dict.keys()}
+        self.player_elo = {i: get_user(i).elo[-1].elo for i in rank_dict.keys()}
         self.add_virtual_player()
 
     @staticmethod
@@ -63,8 +63,6 @@ class EloCalculator:
         elo_change_dict = {player: int(self.anti_inflate(change, d_i_list))
                            for player, change in elo_change_dict.items()}
         return {'elo_change': elo_change_dict, 'player_elo': self.player_elo}
-
-
 
 # A = SoloPerformance(get_match(62663926))
 # B = EloCalculator(A.main())

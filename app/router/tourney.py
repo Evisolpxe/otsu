@@ -53,5 +53,7 @@ async def add_stage_to_tourney(*,
     stage = crud.mappool.get_mappool_stage(q, t.stage)
     if not stage:
         return ResCode.raise_error(32305, stage=stage)
+    if stage in tourney.mappool_stages:
+        return ResCode.raise_error(12102)
     crud.tourney.add_mappool_stage_to_tourney(tourney, stage)
     return ResCode.raise_success(11102, tourney=t.tourney_name, stage=t.stage)

@@ -17,6 +17,10 @@ def get_user(user_id: int) -> Users:
     return Users.objects(user_id=user_id).first()
 
 
+def get_user_elo(user_id: int):
+    return Elo.objects(user_id=user_id).order_by('-match_id').first()
+
+
 def refresh_user_raw(user_id: int):
     return get_user_by_api(user_id)[0]
 
@@ -31,8 +35,9 @@ def create_user(user_id: int) -> Users:
         current_elo = elo_history.elo
     elo = Elo(user_id=user_id, elo=current_elo)
     elo.save()
-    user = Users(user_id=user_id, detail=raw_data[0], latest_elo=elo)
+    user = Users(user_id=user_id, detail=raw_data[0])
     user.save()
+    user.update(push__elo=elo)
     if elo_history:
         user.update(push__elo_history=elo_history)
     return user
@@ -46,11 +51,12 @@ def inherit_elo(elo: schemas.users.InheritElo):
     get_user(elo.user_id)
 
 
-def init_user(user_id: List[int]):
+def init_user(user_id: List[int], refresh=False):
     for uid in user_id:
         user = get_user(uid)
         if user:
-            user.update(detail=refresh_user_raw(uid))
+            if refresh:
+                user.update(detail=refresh_user_raw(uid))
         else:
             try:
                 create_user(uid)

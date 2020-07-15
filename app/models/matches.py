@@ -1,6 +1,7 @@
 from mongoengine import *
 
 from .users import Elo
+from .mappool import MappoolStage
 
 
 class MatchData(DynamicDocument):
@@ -45,11 +46,11 @@ class EventResult(DynamicDocument):
 
 
 class Match(DynamicDocument):
-    tourney = ReferenceField('Tourney')
+    tourney = ReferenceField('Tourney', CASCADE)
     match_id = IntField(required=True, unique=True)
     time = DateTimeField(required=True)
 
-    # mappool = ListField(ReferenceField(MappoolMap))
+    mappool_stage = ReferenceField('MappoolStage', reverse_delete_rule=CASCADE)
 
     events = ListField(ReferenceField('EventResult', reverse_delete_rule=PULL))
     elo_change = ListField(ReferenceField('Elo', reverse_delete_rule=PULL))
@@ -61,7 +62,8 @@ class Match(DynamicDocument):
 
 EventResult.register_delete_rule(Score, 'event', CASCADE)
 Match.register_delete_rule(EventResult, 'match', CASCADE)
-Match.register_delete_rule(Elo, 'match_obj', CASCADE)
+Match.register_delete_rule(Elo, 'match', CASCADE)
+Match.register_delete_rule(MappoolStage, 'matches', PULL)
 
 
 class Qualifier(DynamicDocument):

@@ -5,7 +5,7 @@ from app import crud
 from app.models.matches import Match, MatchData, EventResult, Score
 from app.models.tourney import Tourney
 from app.models.users import Elo
-from app.models.mappool import Mappool
+from app.models.mappool import Mappool, MappoolStage
 from app.api.get import get_match_by_history
 from app.core.match_parse import MatchParser
 from app.core.performance import PerformanceAlgo
@@ -55,21 +55,29 @@ def delete_score(score: Score):
 
 
 def push_match_to_tourney(tourney: Tourney, match: Match):
-    # Tourney的mappools存的是stage
-    maps = [beatmap.beatmap_id for mappool in tourney for beatmap in mappool.maps]
-    for event in match:
-        if event.beatmap_id not in maps:
-            event.delete()
-    return tourney.update(push__matches=match)
-
-
-def push_match_to_mappool(mappool: Mappool, match: Match):
-    # 自动检测图池所有stage的谱面
-    maps = [beatmap.beatmap_id for stage in mappool.stages for beatmap in stage.maps]
+    # Tourney的mappool_stages存的是stage
+    maps = [beatmap.beatmap_id for mappool in tourney.mappool_stages for beatmap in mappool.maps]
+    counts = 0
     for event in match.events:
         if event.beatmap_id not in maps:
             event.delete()
-    return mappool.update(push__matches=match)
+            counts += 1
+    match.update(tourney=tourney)
+    tourney.update(push__matches=match)
+    return {'total_events': len(match.events), 'total_maps': len(maps), 'removed_events': counts}
+
+
+def push_match_to_mappool(mappool_stage: MappoolStage, match: Match):
+    # 检测图池stage的谱面
+    maps = [beatmap.beatmap_id for beatmap in mappool_stage.maps]
+    counts: int = 0
+    for event in match.events:
+        if event.beatmap_id not in maps:
+            event.delete()
+            counts += 1
+    match.update(mappool_stage=mappool_stage)
+    mappool_stage.update(push__matches=match)
+    return {'total_events': len(match.events), 'total_maps': len(maps), 'removed_events': counts}
 
 
 def calc_elo(match: Match):
@@ -77,17 +85,17 @@ def calc_elo(match: Match):
         return
     result = PerformanceAlgo(match).run()
     elo_coefficient = match.tourney.elo_coefficient
-    for user_id, elo_change in result.get('elo_change'):
+    for user_id, elo_change in result.get('elo_change').items():
         final_elo_change = int(elo_change * elo_coefficient)
         elo = Elo(user_id=user_id,
                   difference=final_elo_change,
                   elo=result['player_elo'][user_id] + final_elo_change,
                   match_id=match.match_id,
-                  match_obj=match)
+                  match=match)
         elo.save()
         match.update(push__elo_change=elo)
         user = crud.users.get_user(user_id)
-        user.update(latest_elo=elo)
+        user.update(push__elo=elo)
     return True
 
 
@@ -100,11 +108,10 @@ def calc_all_elo(break_point_match: int) -> int:
         break_point_match = 0
     Elo.objects(match_id__gte=break_point_match).delete()
     # 获取break_point之后的所有比赛重新计算elo
-    matches = Match.objects(match_id__gte=break_point_match).all()
+    matches = Match.objects(match_id__gte=break_point_match, tourney__exists=True, events__size__ne=0).all()
     counts = 0
     for match in matches:
         if calc_elo(match):
             counts += 1
-
     # 返回计算比赛的个数
     return counts

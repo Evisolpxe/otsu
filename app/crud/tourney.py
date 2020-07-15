@@ -23,8 +23,8 @@ def create_tourney(t: schemas.tourney.Tourney) -> None:
 
 
 def get_tourney_mappool(tourney: Tourney) -> dict:
-    return {stage.stage: [beatmap.beatmap_id for beatmap in stage.maps] for stage in tourney.mappools}
+    return {stage.stage: [beatmap.beatmap_id for beatmap in stage.maps] for stage in tourney.mappool_stages}
 
 
 def add_mappool_stage_to_tourney(tourney: Tourney, mappool_stage: MappoolStage):
-    return tourney.update(push__mappools=mappool_stage)
+    return tourney.update(push__mappool_stages=mappool_stage)

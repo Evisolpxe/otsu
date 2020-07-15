@@ -52,6 +52,7 @@ class MatchParser:
                                 match=match.id)
             red, blue = [], []
             event.save()
+
             for score in i['scores']:
                 if int(score['score']) < 5000:
                     continue

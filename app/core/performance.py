@@ -18,6 +18,8 @@ class PerformanceAlgo:
                 return TourneyPerformance(self.match).main()
             elif self.match.tourney.performance_rule == 'Solo':
                 return SoloPerformance(self.match).main()
+            elif self.match.tourney.performance_rule == 'Simple':
+                return SimplePerformance({}).main()
         return {}
 
 
@@ -42,25 +44,23 @@ class TourneyPerformance:
             for player in event.scores:
                 player: Score
                 bonus = self.win_bonus if player.team == event.win_team else 0
-                rank_points[player.user_id] = self.rank_point_limiter(
+                rank_points[str(player.user_id)] = self.rank_point_limiter(
                     self.calc_rank_point(player.score, total_score, len(event.scores), bonus))
 
             for user_id, rp in rank_points.items():
                 self.match_point[user_id] += rp
-
-            event.rank_point = rank_points
-            event.save()
+            event.update(rank_point=rank_points)
 
         return EloCalculator(self.sorted_rank_point_dict()).main()
 
     @staticmethod
     def rank_point_limiter(rank_point):
-        if rank_point > 0.08:
-            return 0.08
-        elif rank_point < -0.03:
-            return 0.03
-        else:
-            return rank_point
+        # if rank_point > 0.08:
+        #     return 0.08
+        # elif rank_point < -0.03:
+        #     return -0.03
+        # else:
+        return rank_point
 
     @staticmethod
     def no_fail_mod_checker(score: Score, scoring_type):
@@ -76,7 +76,7 @@ class TourneyPerformance:
                 }
 
     def calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
-        return round(player_number * sqrt(score) / total_score / 8 - self.threshold + bonus, 4)
+        return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self.threshold + bonus, 4)
 
 
 class SoloPerformance:

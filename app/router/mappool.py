@@ -135,7 +135,7 @@ async def get_mappool_stage(*,
         return ResCode.raise_error(32301, mappool_name=mappool_name)
 
     s = crud.mappool.get_mappool_stage(q, stage)
-    if not stage:
+    if not s:
         return ResCode.raise_error(32305, stage=stage)
     return s
 
