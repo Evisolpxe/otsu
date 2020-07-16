@@ -62,7 +62,7 @@ def push_match_to_tourney(tourney: Tourney, match: Match):
         if event.beatmap_id not in maps:
             event.delete()
             counts += 1
-    match.update(tourney=tourney)
+    match.update(tourney=tourney.id)
     tourney.update(push__matches=match)
     return {'total_events': len(match.events), 'total_maps': len(maps), 'removed_events': counts}
 
@@ -75,7 +75,7 @@ def push_match_to_mappool(mappool_stage: MappoolStage, match: Match):
         if event.beatmap_id not in maps:
             event.delete()
             counts += 1
-    match.update(mappool_stage=mappool_stage)
+    match.update(mappool_stage=mappool_stage.id)
     mappool_stage.update(push__matches=match)
     return {'total_events': len(match.events), 'total_maps': len(maps), 'removed_events': counts}
 
