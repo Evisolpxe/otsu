@@ -17,8 +17,12 @@ def get_user(user_id: int) -> Users:
     return Users.objects(user_id=user_id).first()
 
 
-def get_user_elo(user_id: int):
-    return Elo.objects(user_id=user_id).order_by('-match_id').first()
+def get_user_elo(user_id: int) -> Users:
+    return Users.objects(user_id=user_id).first()
+
+
+def get_user_elo_history(user_id: int):
+    return EloHistory.objects(user_id=user_id).order_by('-add_time').first()
 
 
 def refresh_user_raw(user_id: int):
@@ -26,7 +30,8 @@ def refresh_user_raw(user_id: int):
 
 
 def create_user(user_id: int) -> Users:
-    raw_data = get_user_by_api(user_id)
+    u = Users.objects(user_id=user_id).first()
+    raw_data = [u.detail] if u else get_user_by_api(user_id)
     if not raw_data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='官网数据库中找不到此玩家。')
     current_elo = init_elo(raw_data[0].get('pp_rank'))

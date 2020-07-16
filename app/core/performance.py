@@ -37,11 +37,12 @@ class TourneyPerformance:
     def main(self):
         for event in self.match.events:
             event: EventResult
-            total_score = sum([self.no_fail_mod_checker(player, event.scoring_type)
-                               for player in event.scores])
+            # total_score = sum([self.no_fail_mod_checker(player, event.scoring_type)
+            #                    for player in event.scores])
 
             rank_points = {}
-            sum_sqrt_score = sum([sqrt(i.score) for i in event.scores])
+            sum_sqrt_score = sum([sqrt(self.no_fail_mod_checker(i, event.scoring_type))
+                                  for i in event.scores])
             for player in event.scores:
                 player: Score
                 bonus = self.win_bonus if player.team == event.win_team else 0
