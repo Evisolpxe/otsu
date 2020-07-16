@@ -41,11 +41,12 @@ class TourneyPerformance:
                                for player in event.scores])
 
             rank_points = {}
+            sum_sqrt_score = sum([sqrt(i.score) for i in event.scores])
             for player in event.scores:
                 player: Score
                 bonus = self.win_bonus if player.team == event.win_team else 0
                 rank_points[str(player.user_id)] = self.rank_point_limiter(
-                    self.calc_rank_point(player.score, total_score, len(event.scores), bonus))
+                    self.calc_rank_point(player.score, sum_sqrt_score, len(event.scores), bonus))
 
             for user_id, rp in rank_points.items():
                 self.match_point[user_id] += rp
