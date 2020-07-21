@@ -19,29 +19,32 @@ async def get_match(*,
         return ResCode.raise_error(33201, match_id=match_id)
     if refresh:
         match = crud.matches.create_match(match_id)
-    return {'match_id': match.match_id,
-            'time': str(match.time),
-            'referee': match.referee,
-            'stream': match.stream,
-            'elo_change': {i.user_id: i.difference for i in match.elo_change},
-            'joined_player': match.joined_player,
-            'events': [{'id': event.pk,
-                        'mods': event.mods,
-                        'scoring_type': event.scoring_type,
-                        'start_time': event.start_time,
-                        'win_team': event.win_team,
-                        'rank_point': event.rank_point,
-                        'beatmap_id': event.beatmap_id,
-                        'scores': [{'user_id': score.user_id,
-                                    'accuracy': score.accuracy,
-                                    'mods': score.mods,
-                                    'score': score.score,
-                                    'max_combo': score.max_combo,
-                                    'slot': score.slot,
-                                    'team': score.team,
-                                    'passed': score.passed}
-                                   for score in event.scores]}
-                       for event in match.events]}
+    r = {'match_id': match.match_id,
+         'time': str(match.time),
+         'referee': match.referee,
+         'stream': match.stream,
+         'elo_change': {i.user_id: i.difference for i in match.elo_change},
+         'joined_player': match.joined_player,
+         'events': [{'id': event.pk,
+                     'mods': event.mods,
+                     'scoring_type': event.scoring_type,
+                     'start_time': event.start_time,
+                     'win_team': event.win_team,
+                     'rank_point': event.rank_point,
+                     'beatmap_id': event.beatmap_id,
+                     'scores': [{'user_id': score.user_id,
+                                 'accuracy': score.accuracy,
+                                 'mods': score.mods,
+                                 'score': score.score,
+                                 'max_combo': score.max_combo,
+                                 'slot': score.slot,
+                                 'team': score.team,
+                                 'passed': score.passed}
+                                for score in event.scores]}
+                    for event in match.events]}
+    win_counts = [i.get('win_team') for i in r['events']]
+    r.update({'blue_win': win_counts.count('blue'), 'red_win': win_counts.count('red')})
+    return r
 
 
 @router.post('/{match_id}',

@@ -198,6 +198,14 @@ async def create_mappool_maps(*,
         background_task.add_task(crud.maps.get_beatmap, beatmap.beatmap_id, beatmap.mods)
     return ResCode.raise_success(11302, mappool_name=mappool_name)
 
+@router.post('/{mappool_name}/maps_uploader',
+             summary='图池简易上传工具。',
+             status_code=status.HTTP_201_CREATED)
+async def upload_mappool_maps(*,
+                              mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
+                              stage: str = Query(..., description='上传至的图池。'),
+                              ):
+    pass
 
 @router.put('/maps/{object_id}',
             summary='用object_id修改图池谱面。', )

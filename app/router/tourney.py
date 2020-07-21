@@ -12,12 +12,35 @@ router = APIRouter()
             summary='获取比赛。',
             status_code=status.HTTP_200_OK)
 async def get_tourney(*,
-                      name: str = Query(..., description='比赛名称，支持中文名、缩写、全称。')
-                      ) -> schemas.tourney.TourneyOut:
-    q = crud.tourney.get_tourney(name)
+                      tourney_name: str = Query(..., description='比赛名称，支持中文名、缩写、全称。')
+                      ):
+    q = crud.tourney.get_tourney(tourney_name)
     if not q:
-        return ResCode.raise_error(32101, name=name)
-    return json.loads(q.to_json())
+        return ResCode.raise_error(32101, tourney_name=tourney_name)
+    return {"tourney_name": q.tourney_name,
+            "chn_name": q.chn_name,
+            "acronym": q.acronym,
+            "status": q.status,
+            "elo_coefficient": q.elo_coefficient,
+            "performance_rule": q.performance_rule,
+            "description": q.description,
+            "host": q.host,
+            "staffs": q.staffs,
+            "contributor": q.contributor,
+            "matches": [s.match_id for s in q.matches],
+            "mappool_stages": [s.stage for s in q.mappool_stages]
+            }
+
+
+@router.get('/{tourney_name}/statistics',
+            summary='关于比赛的各种数据。',
+            description='说明晚点写。')
+async def get_tourney_statistics(*, tourney_name: str):
+    q = crud.tourney.get_tourney(tourney_name)
+    if not q:
+        return ResCode.raise_error(32101, name=tourney_name)
+
+
 
 
 @router.post('/{tourney_name}',

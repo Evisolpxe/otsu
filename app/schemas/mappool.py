@@ -79,3 +79,8 @@ class MappoolMapOut(MappoolMap):
 class MappoolStage(BaseModel):
     stage: str = Field(..., example='SemiFinal')
     recommend_elo: List[int] = Field(..., example=[600, 1000])
+
+
+class UploadMappoolMaps(BaseModel):
+    map_order: List[str] = Field(..., example=['NM', 'HD', 'HR', 'DT'], description='图池Mod的排列顺序。')
+

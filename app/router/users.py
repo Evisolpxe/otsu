@@ -31,7 +31,9 @@ async def get_user_elo(*, user_id: int):
     elo = crud.users.get_user_elo(user_id)
     if elo:
         latest_elo = elo.elo[-1]
-        r = {'elo': latest_elo.elo, 'difference': latest_elo.difference, 'match_id': latest_elo.match_id}
+        r = {'elo': latest_elo.elo,
+             'difference': latest_elo.difference,
+             'match_id': latest_elo.match_id}
         if latest_elo.match_id == -1:
             r.update({'message': '本赛季您还未参加比赛哦，参加比赛或者EWC获得本赛季ELO!'})
         return r
@@ -41,6 +43,18 @@ async def get_user_elo(*, user_id: int):
     #             'season_elo': elo_history.elo,
     #             'season_name': elo_history.season}
     return {'message': '尽快参加比赛获取ELO！'}
+
+
+@router.get('/elo_change/{user_id}',
+            summary='获取玩家全部ELO变动。')
+async def get_elo_change(*, user_id: int):
+    user = crud.users.get_user(user_id)
+    if not user:
+        return ResCode.raise_error(33501, user_id=user_id)
+    return [{'elo': i.elo,
+             'difference': i.difference,
+             'match_id': i.match_id}
+            for i in user.elo]
 
 # @router.post('/{user_id}',
 #              summary='把玩家塞进数据库。')
