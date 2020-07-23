@@ -21,6 +21,10 @@ def get_user_elo(user_id: int) -> Users:
     return Users.objects(user_id=user_id).first()
 
 
+def get_users_elo(user_id_list: List[int]) -> List[Users]:
+    return Users.objects(user_id__in=user_id_list).all()
+
+
 def get_user_elo_history(user_id: int):
     return EloHistory.objects(user_id=user_id).order_by('-add_time').first()
 
