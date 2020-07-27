@@ -2,10 +2,12 @@ import json
 from typing import List
 
 from fastapi import APIRouter, status, Query, Path, HTTPException, Response, BackgroundTasks
+from pydantic import Field
 
 from app import crud, schemas
 from app.models.mappool import MappoolComments
 from app.core.error import ResCode
+from app.utils.create_mappool_tool import parse_mappool
 
 router = APIRouter()
 
@@ -198,14 +200,39 @@ async def create_mappool_maps(*,
         background_task.add_task(crud.maps.get_beatmap, beatmap.beatmap_id, beatmap.mods)
     return ResCode.raise_success(11302, mappool_name=mappool_name)
 
+
 @router.post('/{mappool_name}/maps_uploader',
              summary='图池简易上传工具。',
              status_code=status.HTTP_201_CREATED)
 async def upload_mappool_maps(*,
-                              mappool_name: str = Path(..., description='图池名称，只支持全称查询。'),
-                              stage: str = Query(..., description='上传至的图池。'),
+                              t: str
                               ):
-    pass
+    t_schemas = crud.mappool.parse_uploader_json(t)
+    mappool_schemas = schemas.mappool.CreateMappool(mappool_name=t_schemas.mappool_name,
+                                                    acronym=t_schemas.acronym,
+                                                    host=t_schemas.uploader,
+                                                    recommend_elo=t_schemas.recommend_elo,
+                                                    cover=0,
+                                                    description='From arily bot. 如需编辑请联系管理员。')
+
+    # 查找或者创建图池。
+    q = crud.mappool.get_mappool(t_schemas.mappool_name)
+    acronym = crud.mappool.get_mappool(t_schemas.acronym)
+    if q or acronym:
+        mappool = q or acronym
+    else:
+        mappool = crud.mappool.create_mappool(mappool_schemas)
+    # 创建stage
+    stage = crud.mappool.get_mappool_stage(q, t_schemas.stage)
+    if stage:
+        return ResCode.raise_error(12305, stage=stage.stage, mappool_name=t_schemas.mappool_name)
+    stage_schemas = schemas.mappool.MappoolStage(stage=t_schemas.stage, recommend_elo=t_schemas.recommend_elo)
+    stage = crud.mappool.create_mappool_stage(mappool, stage_schemas, uploader_qq=t_schemas.uploader_qq)
+    crud.mappool.push_stage_to_mappool(q, stage)
+
+    # 转换成上传格式。
+    j = parse_mappool(t_schemas.mod_order, t_schemas.mod_number, t_schemas.map_id, t_schemas.uploader)
+
 
 @router.put('/maps/{object_id}',
             summary='用object_id修改图池谱面。', )

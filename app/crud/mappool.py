@@ -98,8 +98,11 @@ def get_mappool_stage_detail(q: Mappool, stage: str, exclude_detail: bool):
             }
 
 
-def create_mappool_stage(q: Mappool, t: schemas.mappool.MappoolStage):
-    stage = MappoolStage(mappool=q, stage=t.stage, recommend_elo=t.recommend_elo)
+def create_mappool_stage(q: Mappool, t: schemas.mappool.MappoolStage, uploader_qq=None):
+    if not uploader_qq:
+        stage = MappoolStage(mappool=q, stage=t.stage, recommend_elo=t.recommend_elo)
+    else:
+        stage = MappoolStage(mappool=q, stage=t.stage, recommend_elo=t.recommend_elo, uploader_qq=uploader_qq)
     stage.save()
     return stage
 
@@ -214,3 +217,38 @@ def delete_mappool_comment(comment_id: str):
 
 def push_comment_to_mappool(q: Mappool, comment: MappoolComments) -> Mappool:
     return q.update(push__comments=comment.id)
+
+
+def get_mappool_stages_by_recommend_elo(elo: int):
+    return MappoolStage.objects(recommend_elo__0__lte=elo, recommend_elo__1__gte=elo).all()
+
+
+def parse_uploader_json(t) ->schemas.mappool.UploadMappoolMaps:
+    payload = json.loads(t)
+    try:
+        recommend_elo = payload.get('recommend_elo').split(',')
+        if len(recommend_elo) !=2:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='recommend_elo | 请输入推荐上下限并检查逗号是否为英文半角。')
+
+        mod_order = payload.get('mod_order').split(',')
+        mod_number = [int(i) for i in payload.get('mod_number').split(',')]
+        if len(mod_order) == 0 or len(mod_number) == 0:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='mod_order/number | 缺少相应参数。')
+        if len(mod_order) != len(mod_number):
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='mod_order/number | 请确保order和number个数一致。')
+
+        map_id = payload.get('map_id').split(',')
+        if len(map_id) != sum(mod_number):
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail='mod_number/map_id | 请确保number总数与一致map_id数量一致。')
+    except AttributeError:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='缺少部分参数。')
+    return schemas.mappool.UploadMappoolMaps(mappool_name=payload.get('mappool_name'),
+                                             acronym=payload.get('acronym'),
+                                             stage=payload.get('stage'),
+                                             recommend_elo=recommend_elo,
+                                             mod_order=mod_order,
+                                             mod_number=mod_number,
+                                             map_id=map_id,
+                                             uploader=payload.get('uploader'),
+                                             uploader_qq=payload.get('uploader_qq'))

@@ -25,6 +25,20 @@ def get_users_elo(user_id_list: List[int]) -> List[Users]:
     return Users.objects(user_id__in=user_id_list).all()
 
 
+def get_users_avg_elo(user_id_list: List[int]) -> int:
+    user_objs = []
+    for user_id in user_id_list:
+        user_obj = Elo.objects(user_id=user_id).order_by('-matches').first()
+        if user_obj:
+            user_objs.append(user_obj.elo)
+        else:
+            create_user(user_id)
+            user_obj = Elo.objects(user_id=user_id).order_by('-matches').first()
+            user_objs.append(user_obj.elo)
+    if user_objs:
+        return sum(user_objs) / len(user_objs)
+
+
 def get_user_elo_history(user_id: int):
     return EloHistory.objects(user_id=user_id).order_by('-add_time').first()
 
@@ -49,7 +63,7 @@ def create_user(user_id: int) -> Users:
     user.update(push__elo=elo)
     if elo_history:
         user.update(push__elo_history=elo_history)
-    return user
+    return user.reload()
 
 
 def get_elo_history(user_id: int) -> EloHistory:

@@ -54,7 +54,7 @@ class UpdateMappool(BaseModel):
     cover: int = Field(None, description='主页现实的图池封面，初始为0，在第一次传图后设为图池第一张图，之后可以自己设置。')
     description: str = Field(None, description='创建者对图池的简介。',
                              example='## This is a description. #### You can write it by Markdown.')
-    mappool_date: datetime = Field(None, description='图池出炉日期，可以不填。', alias='date')
+    # mappool_date: datetime = Field(None, description='图池出炉日期，可以不填。', alias='date')
     status: str = Field(None, example='Pending')
 
 
@@ -82,5 +82,12 @@ class MappoolStage(BaseModel):
 
 
 class UploadMappoolMaps(BaseModel):
-    map_order: List[str] = Field(..., example=['NM', 'HD', 'HR', 'DT'], description='图池Mod的排列顺序。')
-
+    mappool_name: str = Field(...)
+    acronym: str = Field(..., example='OCLR_S11', description='只允许数字、字母、下划线。')
+    stage: str = Field(...)
+    recommend_elo: List[int] = Field(..., description='创建者推荐适合的elo范围。', example=[600, 1000])
+    mod_order: List[str] = Field(..., example=['NM', 'HD', 'HR', 'DT'], description='图池Mod的排列顺序。')
+    mod_number: List[int] = Field(...)
+    map_id: List[int] = Field(...)
+    uploader: int = Field(...)
+    uploader_qq: int = Field(...)
