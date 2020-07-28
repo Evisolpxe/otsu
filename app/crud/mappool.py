@@ -146,7 +146,7 @@ def get_mappool_map_by_id(object_id: MappoolMap.id):
 def create_mappool_map(q: Mappool, t: List[schemas.mappool.MappoolMap], stage: MappoolStage) -> dict:
     try:
         map_list = [i.beatmap_id for i in MappoolMap.objects(beatmap_id__in=[i.beatmap_id for i in t],
-                                                             mappool=q.mappool_name).all()]
+                                                             mappool=q.id).all()]
         counts = 0
         for i in t:
             if i.beatmap_id not in map_list:
