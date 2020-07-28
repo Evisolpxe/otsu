@@ -82,20 +82,20 @@ def get_mappool_stage(q: Mappool, stage: str) -> MappoolStage:
 def get_mappool_stage_detail(q: Mappool, stage: str, exclude_detail: bool):
     detail = {'message': 'exclude'} if exclude_detail else {}
     s = get_mappool_stage(q, stage)
-    return {'stage': s.stage,
-            'maps': [{'object_id': str(i.id),
-                      'beatmap_id': i.beatmap_id,
-                      'mod_index': i.mod_index,
-                      'mods': i.mods,
-                      'stage': s.stage,
-                      'selector': i.selector,
-                      'detail': detail or get_beatmap(i.beatmap_id, mod=i.mods)}
-                     for i in s.maps],
-            'mappool': s.mappool.name,
-            'recommend_elo': s.recommend_elo,
-            'tourneys': [i.tourney_name for i in s.tourneys],
-            'matches': [i.match_id for i in s.matches]
-            }
+    return {
+        'stage': s.stage,
+        'maps': [{'object_id': str(i.id),
+                  'beatmap_id': i.beatmap_id,
+                  'mod_index': i.mod_index,
+                  'mods': i.mods,
+                  'selector': i.selector,
+                  'detail': detail or get_beatmap(i.beatmap_id, mod=i.mods)}
+                 for i in s.maps],
+        'mappool': s.mappool.mappool_name,
+        'recommend_elo': s.recommend_elo,
+        'tourneys': [i.tourney_name for i in s.tourneys],
+        'matches': [i.match_id for i in s.matches]
+    }
 
 
 def create_mappool_stage(q: Mappool, t: schemas.mappool.MappoolStage, uploader_qq=None):
@@ -223,26 +223,30 @@ def get_mappool_stages_by_recommend_elo(elo: int):
     return MappoolStage.objects(recommend_elo__0__lte=elo, recommend_elo__1__gte=elo).all()
 
 
-def parse_uploader_json(t) ->schemas.mappool.UploadMappoolMaps:
-    payload = json.loads(t)
+def parse_uploader_json(t) -> schemas.mappool.UploadMappoolMaps:
     try:
+        payload = json.loads(t)
         recommend_elo = payload.get('recommend_elo').split(',')
-        if len(recommend_elo) !=2:
-            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='recommend_elo | 请输入推荐上下限并检查逗号是否为英文半角。')
+        if len(recommend_elo) != 2:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail='recommend_elo | 请输入推荐上下限并检查逗号是否为英文半角。')
 
         mod_order = payload.get('mod_order').split(',')
         mod_number = [int(i) for i in payload.get('mod_number').split(',')]
         if len(mod_order) == 0 or len(mod_number) == 0:
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='mod_order/number | 缺少相应参数。')
         if len(mod_order) != len(mod_number):
-            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='mod_order/number | 请确保order和number个数一致。')
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail='mod_order/number | 请确保order和number个数一致。')
 
-        map_id = payload.get('map_id').split(',')
+        map_id = {int(i) for i in payload.get('map_id').split(',')}
         if len(map_id) != sum(mod_number):
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                 detail='mod_number/map_id | 请确保number总数与一致map_id数量一致。')
     except AttributeError:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='缺少部分参数。')
+    except json.decoder.JSONDecodeError:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail='不合法的数据格式。')
     return schemas.mappool.UploadMappoolMaps(mappool_name=payload.get('mappool_name'),
                                              acronym=payload.get('acronym'),
                                              stage=payload.get('stage'),

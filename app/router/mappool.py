@@ -139,7 +139,7 @@ async def get_mappool_stage(*,
     s = crud.mappool.get_mappool_stage(q, stage)
     if not s:
         return ResCode.raise_error(32305, stage=stage)
-    return s
+    return crud.mappool.get_mappool_stage_detail(q, s.stage, exclude_detail)
 
 
 @router.delete('/{mappool_name}/stage/{stage}',
@@ -156,7 +156,7 @@ async def delete_mappool_stage(*,
     if not stage:
         return ResCode.raise_error(32305, stage=stage)
     crud.mappool.delete_mappool_stage(stage)
-    return ResCode.raise_success(41305, stage=stage, mappool_name=mappool_name)
+    return ResCode.raise_success(41305, stage=stage.stage, mappool_name=mappool_name)
 
 
 @router.get('/{mappool_name}/maps',
@@ -170,7 +170,7 @@ async def get_mappool_maps(*,
                            ) -> List[dict]:
     q = crud.mappool.get_mappool(mappool_name)
     if not q:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail='没有找到对应图池哦！')
+        return ResCode.raise_error(32301, mappool_name=mappool_name)
         # return ResCode.raise_error(32301, mappool_name=mappool_name)
     maps = crud.mappool.get_mappool_maps(q, exclude_detail)
     # if not maps:
@@ -205,7 +205,8 @@ async def create_mappool_maps(*,
              summary='图池简易上传工具。',
              status_code=status.HTTP_201_CREATED)
 async def upload_mappool_maps(*,
-                              t: str
+                              t: str,
+                              background_task: BackgroundTasks
                               ):
     t_schemas = crud.mappool.parse_uploader_json(t)
     mappool_schemas = schemas.mappool.CreateMappool(mappool_name=t_schemas.mappool_name,
@@ -220,18 +221,23 @@ async def upload_mappool_maps(*,
     acronym = crud.mappool.get_mappool(t_schemas.acronym)
     if q or acronym:
         mappool = q or acronym
+
     else:
         mappool = crud.mappool.create_mappool(mappool_schemas)
     # 创建stage
-    stage = crud.mappool.get_mappool_stage(q, t_schemas.stage)
+    stage = crud.mappool.get_mappool_stage(mappool, t_schemas.stage)
     if stage:
         return ResCode.raise_error(12305, stage=stage.stage, mappool_name=t_schemas.mappool_name)
     stage_schemas = schemas.mappool.MappoolStage(stage=t_schemas.stage, recommend_elo=t_schemas.recommend_elo)
     stage = crud.mappool.create_mappool_stage(mappool, stage_schemas, uploader_qq=t_schemas.uploader_qq)
-    crud.mappool.push_stage_to_mappool(q, stage)
+    crud.mappool.push_stage_to_mappool(mappool, stage)
 
     # 转换成上传格式。
     j = parse_mappool(t_schemas.mod_order, t_schemas.mod_number, t_schemas.map_id, t_schemas.uploader)
+    crud.mappool.create_mappool_map(mappool, j, stage)
+    for beatmap in j:
+        background_task.add_task(crud.maps.get_beatmap, beatmap.beatmap_id, beatmap.mods)
+    return ResCode.raise_success(11302, mappool_name=mappool.mappool_name, stage=stage.stage, counts=len(j))
 
 
 @router.put('/maps/{object_id}',

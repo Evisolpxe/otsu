@@ -74,6 +74,7 @@ class MappoolMap(BaseModel):
 class MappoolMapOut(MappoolMap):
     object_id: str
     detail: dict
+    stage: str
 
 
 class MappoolStage(BaseModel):
