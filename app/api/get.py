@@ -38,6 +38,8 @@ def get_map_by_api(map_id: int, mods: int = 0) -> dict:
     while retry < 5:
         try:
             r = requests.get(f"{BASE_URL}/get_beatmaps?k={TOKEN}&b={map_id}&mods={mods}")
+            print(f"{BASE_URL}/get_beatmaps?k={TOKEN}&b={map_id}&mods={mods}")
+            print(r.json())
         except ConnectTimeout as err:
             retry += 1
             print(f'Connect failed, try again. Times: {retry}')
