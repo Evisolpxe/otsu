@@ -12,3 +12,16 @@ def get_match(match_id: int) -> Optional[dict]:
         return r.json()
 
 
+def get_user(user_id: int = None, username: str = None, mode: int = 0) -> Optional[dict]:
+    if user_id or username:
+        r = requests.get(f'{BASE_URL}get_user', params={
+            'k': OSU_V1_API_TOKEN,
+            'u': user_id or username,
+            'm': mode
+        })
+        return r.json()
+
+
+def get_beatmap():
+    pass
+
