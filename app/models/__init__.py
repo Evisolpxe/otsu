@@ -5,4 +5,9 @@ from .users import User
 
 connect('otsu-v2')
 
-print(User.get_user(username='Explosive').query_time)
+MatchGame.drop_collection()
+Match.drop_collection()
+Score.drop_collection()
+Match.get_match(66160343)
+# Match.delete_match(66160343)
+

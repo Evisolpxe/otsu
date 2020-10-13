@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, List
 
 from mongoengine import (
     Document,
@@ -8,13 +8,20 @@ from mongoengine import (
     StringField,
     DateTimeField,
     ListField,
+    DictField,
     ReferenceField
 )
 
 from ..osu_api import api_v1
+from ..core.performance import PerformanceLibrary
 
 
 class Score(Document):
+    """
+        team: if mode doesn't support teams it is 0, otherwise 1 = blue, 2 = red
+        pass: if player failed at the end of the map it is 0, otherwise (pass or revive) it is 1
+        perfect: 1 = maximum combo of map reached, 0 otherwise
+    """
     user_id = IntField(required=True)
     score = IntField()
     accuracy = FloatField()
@@ -24,6 +31,7 @@ class Score(Document):
     count300 = IntField()
     count_miss = IntField()
     pass_ = IntField(db_field='pass')
+    perfect = IntField()
     enable_mods = IntField()
     team = IntField()
     slot = IntField()
@@ -32,39 +40,55 @@ class Score(Document):
         'indexes': ['user_id']
     }
 
+    def __init__(self, *args, **values):
+        super().__init__(*args, **values)
+        self.accuracy = self.calc_accuracy()
+
+    # @classmethod
+    # def calc_accuracy(cls, n_300: int, n_100: int, n_50: int, n_0: int) -> float:
+    #     return (50 * n_50 + 100 * n_100 + 300 * n_300) / 300 * (n_300 + n_100 + n_50 + n_0)
+
+    def calc_accuracy(self) -> float:
+        return (50 * self.count50 + 100 * self.count100 + 300 * self.count300) / \
+               (300 * (self.count300 + self.count100 + self.count50 + self.count_miss))
+
 
 class MatchGame(Document):
-    game_id = IntField(required=True, unique=True)
+    """
+    standard = 0, taiko = 1, ctb = 2, o!m = 3
+    scoring winning condition: score = 0, accuracy = 1, combo = 2, score v2 = 3
+    team_type: Head to head = 0, Tag Co-op = 1, Team vs = 2, Tag Team vs = 3
+    """
+    game_id = IntField(primary_key=True)
     start_time = DateTimeField()
     end_time = DateTimeField()
     beatmap_id = IntField()
     play_mode = IntField()
     match_type = IntField()
+    scoring_type = IntField()
+    team_type = IntField()
     mods = IntField()
     scores = ListField(ReferenceField(Score))
 
     meta = {
-        'indexes': ['game_id', 'beatmap_id', 'mods']
+        'indexes': ['beatmap_id', 'mods']
     }
 
 
 class Match(Document):
-    match_id = IntField(min_value=1, required=True, unique=True)
+    match_id = IntField(primary_key=True)
     name = StringField()
     start_time = DateTimeField()
     end_time = DateTimeField()
-    games = ListField(ReferenceField(MatchGame))
+    games: List[MatchGame] = ListField(ReferenceField(MatchGame))
 
     meta = {
-        'indexes': ['match_id', 'name']
+        'indexes': ['name']
     }
 
     @classmethod
-    def calc_accuracy(cls, n_300: int, n_100: int, n_50: int, n_0: int) -> float:
-        return (50 * n_50 + 100 * n_100 + 300 * n_300) / 300 * (n_300 + n_100 + n_50 + n_0)
-
-    @classmethod
     def get_match(cls, match_id: int) -> Optional[Match]:
+
         if match := cls.objects(match_id=match_id).first():
             return match
 
@@ -74,29 +98,54 @@ class Match(Document):
                 name=match_data['match']['name'],
                 start_time=match_data['match']['start_time'],
                 end_time=match_data['match']['end_time'],
-                games=[
-                    MatchGame(
-                        game_id=game['game_id'],
-                        start_time=game['start_time'],
-                        end_time=game['end_time'],
-                        beatmap_id=game['beatmap_id'],
-                        play_mode=game['play_mode'],
-                        match_type=game['match_type'],
-                        mods=game['mods'],
-                        scores=[
-                            Score(
-                                user_id=score['user_id'],
-                                score=score['score'],
-                                max_combo=score['maxcombo'],
-                                count50=score['count50'],
-                                count100=score['count100'],
-                                count300=score['count300'],
-                                count_miss=score['countmiss'],
-                                pass_=score['pass'],
-                                enable_mods=score['enabled_mods'],
-                                team=score['team'],
-                                slot=score['slot']
-                            ).save() for score in game['scores']],
-                    ).save() for game in match_data['games']
-                ]
+                games=[MatchGame(
+                    game_id=game['game_id'],
+                    start_time=game['start_time'],
+                    end_time=game['end_time'],
+                    beatmap_id=game['beatmap_id'],
+                    play_mode=game['play_mode'],
+                    scoring_type=game['scoring_type'],
+                    team_type=game['team_type'],
+                    match_type=game['match_type'],
+                    mods=game['mods'],
+                    scores=[Score(
+                        user_id=score['user_id'],
+                        score=score['score'],
+                        max_combo=score['maxcombo'],
+                        count50=score['count50'],
+                        count100=score['count100'],
+                        count300=score['count300'],
+                        count_miss=score['countmiss'],
+                        pass_=score['pass'],
+                        enable_mods=score['enabled_mods'],
+                        team=score['team'],
+                        slot=score['slot']
+                    ).save() for score in game['scores']],
+                ).save() for game in match_data['games']]
             ).save()
+
+    @classmethod
+    def delete_match(cls, match_id: int) -> int:
+        if match := cls.objects(match_id=match_id).first():
+            for game in match.games:
+                for score in game.scores:
+                    score.delete()
+                game.delete()
+            return match.delete()
+
+
+class MatchResult(Document):
+    match = ReferenceField(Match)
+    win_scoring_type = IntField()
+    score = DictField()
+    performance_rule = StringField()
+    result = ListField(DictField())
+
+    @classmethod
+    def parse_match(cls, match_id: int, win_scoring_type: int, performance_rule: PerformanceLibrary = None):
+        if match := Match.get_match(match_id):
+            for game in match.games:
+                if game.team_type == 0:
+                    pass
+                elif game.team_type == 2:
+                    pass
