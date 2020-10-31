@@ -13,7 +13,7 @@ from mongoengine import (
 )
 
 from ..osu_api import api_v1
-from ..core.performance import PerformanceLibrary
+
 
 
 class Score(Document):
@@ -134,18 +134,24 @@ class Match(Document):
             return match.delete()
 
 
+class GameResult(Document):
+    game_id = ReferenceField(MatchGame)
+    public_mod = IntField()
+    winner_team = IntField()
+    game_winner = ListField(IntField())
+
+
 class MatchResult(Document):
     match = ReferenceField(Match)
     win_scoring_type = IntField()
-    score = DictField()
+    match_winner = ListField(IntField())
+
     performance_rule = StringField()
-    result = ListField(DictField())
+    performance_rank = DictField()
+
+    game_results = ListField(ReferenceField(GameResult))
 
     @classmethod
     def parse_match(cls, match_id: int, win_scoring_type: int, performance_rule: PerformanceLibrary = None):
         if match := Match.get_match(match_id):
-            for game in match.games:
-                if game.team_type == 0:
-                    pass
-                elif game.team_type == 2:
-                    pass
+            pass
