@@ -85,9 +85,6 @@ class HeadToHeadRule(BaseRule):
         return sorted(point_counts.items(), key=lambda x: x[1]['total'])
 
 
-print(HeadToHeadRule(Match.get_match(66160343), warm_up=2).result)
-
-
 class EloRule:
     def __init__(self):
         self.win_bonus: float = 0.035

@@ -1,1 +1,8 @@
-OSU_V1_API_TOKEN = '9aa58c3820b6a95beb5b4430df5f88f5812cdaf1'
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+OSU_API_TOKEN_V1 = os.getenv('OSU_API_TOKEN_V1')
+

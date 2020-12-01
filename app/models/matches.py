@@ -15,7 +15,6 @@ from mongoengine import (
 from ..osu_api import api_v1
 
 
-
 class Score(Document):
     """
         team: if mode doesn't support teams it is 0, otherwise 1 = blue, 2 = red
