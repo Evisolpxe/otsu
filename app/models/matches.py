@@ -9,10 +9,11 @@ from mongoengine import (
     DateTimeField,
     ListField,
     DictField,
-    ReferenceField
+    ReferenceField,
+    PULL
 )
 
-from ..osu_api import api_v1
+from ..api import api_v1
 
 
 class Score(Document):
@@ -58,7 +59,7 @@ class MatchGame(Document):
     scoring winning condition: score = 0, accuracy = 1, combo = 2, score v2 = 3
     team_type: Head to head = 0, Tag Co-op = 1, Team vs = 2, Tag Team vs = 3
     """
-    game_id = IntField(primary_key=True)
+    game_id = IntField(required=True, unique=True)
     start_time = DateTimeField()
     end_time = DateTimeField()
     beatmap_id = IntField()
@@ -67,7 +68,7 @@ class MatchGame(Document):
     scoring_type = IntField()
     team_type = IntField()
     mods = IntField()
-    scores = ListField(ReferenceField(Score))
+    scores = ListField(ReferenceField(Score, reverse_delete_rule=PULL))
 
     meta = {
         'indexes': ['beatmap_id', 'mods']
@@ -75,11 +76,11 @@ class MatchGame(Document):
 
 
 class Match(Document):
-    match_id = IntField(primary_key=True)
+    match_id = IntField(required=True, unique=True)
     name = StringField()
     start_time = DateTimeField()
     end_time = DateTimeField()
-    games: List[MatchGame] = ListField(ReferenceField(MatchGame))
+    games: List[MatchGame] = ListField(ReferenceField(MatchGame), reverse_delete_rule=PULL)
 
     meta = {
         'indexes': ['name']
@@ -92,6 +93,7 @@ class Match(Document):
             return match
 
         if match_data := api_v1.get_match(match_id):
+            print(match_data)
             return cls(
                 match_id=match_data['match']['match_id'],
                 name=match_data['match']['name'],
@@ -116,7 +118,7 @@ class Match(Document):
                         count300=score['count300'],
                         count_miss=score['countmiss'],
                         pass_=score['pass'],
-                        enable_mods=score['enabled_mods'],
+                        enable_mods=score['enabled_mods'] or 0,
                         team=score['team'],
                         slot=score['slot']
                     ).save() for score in game['scores']],
@@ -126,10 +128,6 @@ class Match(Document):
     @classmethod
     def delete_match(cls, match_id: int) -> int:
         if match := cls.objects(match_id=match_id).first():
-            for game in match.games:
-                for score in game.scores:
-                    score.delete()
-                game.delete()
             return match.delete()
 
 

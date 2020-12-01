@@ -12,7 +12,7 @@ from mongoengine import (
 )
 from mongoengine.queryset.visitor import Q
 
-from ..osu_api import api_v1
+from ..api import api_v1
 
 
 class User(DynamicDocument):
