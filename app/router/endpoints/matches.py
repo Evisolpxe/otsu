@@ -15,7 +15,7 @@ router = APIRouter()
             response_class=ORJSONResponse)
 async def get_match(match_id: int):
     if match := models.Match.get_match(match_id):
-        return match.to_dict()
+        return match
 
 
 @router.delete('/{match_id}',

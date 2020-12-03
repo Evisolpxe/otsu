@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class ScoresSchema(BaseModel):
+    _id: str
     user_id: int
     score: int
     user_id: int
@@ -20,6 +21,10 @@ class ScoresSchema(BaseModel):
     team: int
     slot: int
 
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
 
 class GamesSchema(BaseModel):
     game_id: int = Field(...)
@@ -32,6 +37,9 @@ class GamesSchema(BaseModel):
     mods: int
     scores: List[ScoresSchema]
 
+    class Config:
+        orm_mode = True
+
 
 class MatchSchema(BaseModel):
     match_id: int = Field(...)
@@ -41,6 +49,7 @@ class MatchSchema(BaseModel):
     games: List[GamesSchema]
 
     class Config:
+        orm_mode = True
         schema_extra = {
             'example': {
                 "match_id": 66160343,

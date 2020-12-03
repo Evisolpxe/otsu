@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Optional, List
 
-import orjson
 from mongoengine import (
     Document,
     IntField,
@@ -17,13 +16,15 @@ from mongoengine import (
 from ..api import api_v1
 
 
-class Score(Document):
+class MatchScore(Document):
     """
         team: if mode doesn't support teams it is 0, otherwise 1 = blue, 2 = red
         pass: if player failed at the end of the map it is 0, otherwise (pass or revive) it is 1
         perfect: 1 = maximum combo of map reached, 0 otherwise
     """
     user_id = IntField(required=True)
+    match_id = IntField(ReferenceField('Match'))
+    game_id = IntField(ReferenceField('MatchGame'))
     score = IntField()
     accuracy = FloatField()
     max_combo = IntField()
@@ -36,6 +37,8 @@ class Score(Document):
     enable_mods = IntField()
     team = IntField()
     slot = IntField()
+
+
 
     meta = {
         'indexes': ['user_id']
@@ -61,6 +64,7 @@ class MatchGame(Document):
     team_type: Head to head = 0, Tag Co-op = 1, Team vs = 2, Tag Team vs = 3
     """
     game_id = IntField(required=True, unique=True)
+    match_id = IntField(ReferenceField('match'))
     start_time = DateTimeField()
     end_time = DateTimeField()
     beatmap_id = IntField()
@@ -69,7 +73,7 @@ class MatchGame(Document):
     scoring_type = IntField()
     team_type = IntField()
     mods = IntField()
-    scores = ListField(ReferenceField(Score, reverse_delete_rule=PULL))
+    scores = ListField(ReferenceField(MatchScore, reverse_delete_rule=PULL))
 
     meta = {
         'indexes': ['beatmap_id', 'mods']
@@ -84,7 +88,7 @@ class Match(Document):
     games: List[MatchGame] = ListField(ReferenceField(MatchGame), reverse_delete_rule=PULL)
 
     meta = {
-        'indexes': ['name']
+        'indexes': ['match_id', 'name']
     }
 
     @classmethod
@@ -109,7 +113,7 @@ class Match(Document):
                     team_type=game['team_type'],
                     match_type=game['match_type'],
                     mods=game['mods'],
-                    scores=[Score(
+                    scores=[MatchScore(
                         user_id=score['user_id'],
                         score=score['score'],
                         max_combo=score['maxcombo'],
@@ -130,45 +134,42 @@ class Match(Document):
         if match := cls.objects(match_id=match_id).first():
             return match.delete()
 
-    def to_dict(self):
-        return {
-            'match_id': self.match_id,
-            'name': self.name,
-            'start_time': self.start_time,
-            'end_time': self.end_time,
-            'games': [{
-                'game_id': game.game_id,
-                'start_time': game.start_time,
-                'end_time': game.end_time,
-                'beatmap_id': game.beatmap_id,
-                'play_mode': game.play_mode,
-                'scoring_type': game.scoring_type,
-                'team_type': game.team_type,
-                'match_type': game.match_type,
-                'mods': game.mods,
-                'scores': [{
-                    'user_id': score.user_id,
-                    'score': score.score,
-                    'accuracy': score.accuracy,
-                    'max_combo': score.max_combo,
-                    'count50': score.count50,
-                    'count100': score.count100,
-                    'count300': score.count300,
-                    'count_miss': score.count_miss,
-                    'pass': score.pass_,
-                    'enable_mods': score.enable_mods,
-                    'team': score.team,
-                    'slot': score.slot
-                } for score in game.scores
-                ]
-            } for game in self.games
-            ]
-        }
+    # def to_dict(self):
+    #     return {
+    #         'match_id': self.match_id,
+    #         'name': self.name,
+    #         'start_time': self.start_time,
+    #         'end_time': self.end_time,
+    #         'games': [{
+    #             'game_id': game.game_id,
+    #             'start_time': game.start_time,
+    #             'end_time': game.end_time,
+    #             'beatmap_id': game.beatmap_id,
+    #             'play_mode': game.play_mode,
+    #             'scoring_type': game.scoring_type,
+    #             'team_type': game.team_type,
+    #             'match_type': game.match_type,
+    #             'mods': game.mods,
+    #             'scores': [{
+    #                 'user_id': score.user_id,
+    #                 'score': score.score,
+    #                 'accuracy': score.accuracy,
+    #                 'max_combo': score.max_combo,
+    #                 'count50': score.count50,
+    #                 'count100': score.count100,
+    #                 'count300': score.count300,
+    #                 'count_miss': score.count_miss,
+    #                 'pass': score.pass_,
+    #                 'enable_mods': score.enable_mods,
+    #                 'team': score.team,
+    #                 'slot': score.slot
+    #             } for score in game.scores]
+    #         } for game in self.games]
+    #     }
 
 
 class GameResult(Document):
     game_id = ReferenceField(MatchGame)
-    public_mod = IntField()
     winner_team = IntField()
     game_winner = ListField(IntField())
 

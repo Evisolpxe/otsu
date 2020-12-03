@@ -1,6 +1,6 @@
 from mongoengine import connect
 
-from .matches import Match, MatchGame, Score
+from app.models.matches import Match, MatchGame, MatchScore
 
 
 connect('otsu-v2')
