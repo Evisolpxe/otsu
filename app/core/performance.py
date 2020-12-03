@@ -1,4 +1,5 @@
 from __future__ import annotations
+from math import sqrt
 
 from enum import Enum
 from typing import List, Callable
@@ -42,6 +43,14 @@ class BaseRule:
             self._message = f'有效对局为{len(self.match.games)}局，至少需要{times}局才可记录成绩。'
 
 
+    def sorted_rank_point_dict(self, player_point: dict) -> dict:
+        # 获得玩家最终rank_point的排名。
+        return {str(x[0]): i
+                for i, x in enumerate(
+                sorted(player_point.items(), key=lambda x: x[1], reverse=True), 1)
+                }
+
+
 class SoloRule(BaseRule):
 
     def __init__(self, *args, **kwargs):
@@ -51,10 +60,11 @@ class SoloRule(BaseRule):
         self.description = '比赛为1v1时使用的算法。'
         self.minimum_games_check(4)
 
+        # 统计排名用的积分
+        self.player_point = defaultdict(int)
         self.result = self.run()
 
     def run(self) -> dict:
-        win_count = defaultdict(int)
         for game in self.valid_game:
             valid_scores = [score for score in game.scores if score.score >= 10000]
             if len(valid_scores) != 2:
@@ -62,12 +72,9 @@ class SoloRule(BaseRule):
                 self._message = '比赛人数不为2人，无法使用单挑规则哦！'
                 break
             sorted_ranking = sorted(game.scores, key=itemgetter('score'))
-            win_count[sorted_ranking[0].user_id] += 1
-            win_count[sorted_ranking[1].user_id] += 0
-        if self._validation:
-            win_count['validation'] = True
-            return win_count
-        return {'message': self._message, 'validation': False}
+            self.player_point[sorted_ranking[0].user_id] += 1
+            self.player_point[sorted_ranking[1].user_id] += 0
+        return {'message': self._message, 'validation': False, 'player_point': self.player_point}
 
 
 class HeadToHeadRule(BaseRule):
@@ -121,6 +128,9 @@ class EloRule(BaseRule):
         # 1 == no fail
         if score.enable_mods & 1:
             return score.score * 2
+
+    def calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
+        return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self.threshold + bonus, 4)
 
     def run(self):
         pass
