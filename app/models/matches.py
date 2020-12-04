@@ -23,8 +23,8 @@ class MatchScore(Document):
         perfect: 1 = maximum combo of map reached, 0 otherwise
     """
     user_id = IntField(required=True)
-    match_id = IntField(ReferenceField('Match'))
-    game_id = IntField(ReferenceField('MatchGame'))
+    match_id = IntField()
+    game_id = IntField()
     score = IntField()
     accuracy = FloatField()
     max_combo = IntField()
@@ -38,19 +38,18 @@ class MatchScore(Document):
     team = IntField()
     slot = IntField()
 
-
-
     meta = {
-        'indexes': ['user_id']
+        'indexes': ['user_id', 'match_id', 'game_id', 'enable_mods']
     }
 
     def __init__(self, *args, **values):
         super().__init__(*args, **values)
         self.accuracy = self.calc_accuracy()
 
-    # @classmethod
-    # def calc_accuracy(cls, n_300: int, n_100: int, n_50: int, n_0: int) -> float:
-    #     return (50 * n_50 + 100 * n_100 + 300 * n_300) / 300 * (n_300 + n_100 + n_50 + n_0)
+    @classmethod
+    def delete_score(cls, score_id: str) -> None:
+        if score := cls.objects(id=score_id).first():
+            score.delete()
 
     def calc_accuracy(self) -> float:
         return (50 * self.count50 + 100 * self.count100 + 300 * self.count300) / \
@@ -63,8 +62,8 @@ class MatchGame(Document):
     scoring winning condition: score = 0, accuracy = 1, combo = 2, score v2 = 3
     team_type: Head to head = 0, Tag Co-op = 1, Team vs = 2, Tag Team vs = 3
     """
-    game_id = IntField(required=True, unique=True)
-    match_id = IntField(ReferenceField('match'))
+    game_id = IntField(primary_key=True)
+    match_id = IntField()
     start_time = DateTimeField()
     end_time = DateTimeField()
     beatmap_id = IntField()
@@ -79,16 +78,23 @@ class MatchGame(Document):
         'indexes': ['beatmap_id', 'mods']
     }
 
+    @classmethod
+    def delete_game(cls, game_id: int) -> None:
+        if game := cls.objects(game_id=game_id).first():
+            for score in game.scores:
+                score.delete()
+            game.delete()
+
 
 class Match(Document):
-    match_id = IntField(required=True, unique=True)
+    match_id = IntField(primary_key=True)
     name = StringField()
     start_time = DateTimeField()
     end_time = DateTimeField()
-    games: List[MatchGame] = ListField(ReferenceField(MatchGame), reverse_delete_rule=PULL)
+    games: List[MatchGame] = ListField(ReferenceField(MatchGame, reverse_delete_rule=PULL))
 
     meta = {
-        'indexes': ['match_id', 'name']
+        'indexes': ['name']
     }
 
     @classmethod
@@ -105,6 +111,7 @@ class Match(Document):
                 end_time=match_data['match']['end_time'],
                 games=[MatchGame(
                     game_id=game['game_id'],
+                    match_id=match_id,
                     start_time=game['start_time'],
                     end_time=game['end_time'],
                     beatmap_id=game['beatmap_id'],
@@ -114,6 +121,8 @@ class Match(Document):
                     match_type=game['match_type'],
                     mods=game['mods'],
                     scores=[MatchScore(
+                        match_id=match_id,
+                        game_id=game['game_id'],
                         user_id=score['user_id'],
                         score=score['score'],
                         max_combo=score['maxcombo'],
@@ -132,6 +141,10 @@ class Match(Document):
     @classmethod
     def delete_match(cls, match_id: int) -> int:
         if match := cls.objects(match_id=match_id).first():
+            for game in match.games:
+                for score in game.scores:
+                    score.delete()
+                game.delete()
             return match.delete()
 
     # def to_dict(self):

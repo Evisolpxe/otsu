@@ -1,12 +1,13 @@
 import datetime
 from typing import List, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.models.mongo import MongoModel, PyObjectId
 
 
-class ScoresSchema(BaseModel):
-    _id: str
-    user_id: int
+class ScoresSchema(MongoModel):
+    id: PyObjectId = Field(alias="_id")
     score: int
     user_id: int
     score: int
@@ -21,12 +22,8 @@ class ScoresSchema(BaseModel):
     team: int
     slot: int
 
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
 
-
-class GamesSchema(BaseModel):
+class GamesSchema(MongoModel):
     game_id: int = Field(...)
     start_time: datetime.datetime
     end_time: Optional[datetime.datetime] = None
@@ -37,11 +34,8 @@ class GamesSchema(BaseModel):
     mods: int
     scores: List[ScoresSchema]
 
-    class Config:
-        orm_mode = True
 
-
-class MatchSchema(BaseModel):
+class MatchSchema(MongoModel):
     match_id: int = Field(...)
     name: str
     start_time: datetime.datetime
@@ -49,97 +43,55 @@ class MatchSchema(BaseModel):
     games: List[GamesSchema]
 
     class Config:
-        orm_mode = True
         schema_extra = {
             'example': {
-                "match_id": 66160343,
-                "name": "4WC: (China) vs (Australia)",
-                "start_time": "2020-08-29T09:53:26",
-                "end_time": "2020-08-29T11:14:19",
+                "match_id": 70772794,
+                "name": "EWC S0:(- Rainbow -) vs (Re_CYCLC)",
+                "start_time": "2020-12-01T11:02:15",
+                "end_time": "2020-12-01T11:29:31",
                 "games": [
                     {
-                        "game_id": 346638012,
-                        "start_time": "2020-08-29T10:06:32",
-                        "end_time": "2020-08-29T10:09:34",
-                        "beatmap_id": 2292446,
+                        "game_id": 370370537,
+                        "start_time": "2020-12-01T11:05:18",
+                        "end_time": "2020-12-01T11:07:06",
+                        "beatmap_id": 2321257,
                         "play_mode": 0,
                         "match_type": 0,
                         "scoring_type": 3,
-                        "mods": 0,
+                        "mods": 1,
                         "scores": [
                             {
-                                "user_id": 5791401,
-                                "score": 928370,
+                                "_id": "5fc9d1fe96863adcdd478571",
+                                "score": 390920,
+                                "user_id": 8742486,
                                 "accuracy": 0,
-                                "max_combo": 979,
-                                "count50": 1,
-                                "count100": 25,
-                                "count300": 729,
-                                "count_miss": 0,
-                                "pass": 1,
-                                "enable_mods": 0,
-                                "team": 1,
-                                "slot": 0
-                            },
-                            {
-                                "user_id": 7839397,
-                                "score": 215955,
-                                "accuracy": 0,
-                                "max_combo": 193,
-                                "count50": 5,
-                                "count100": 49,
-                                "count300": 678,
-                                "count_miss": 23,
-                                "pass": 1,
-                                "enable_mods": 0,
-                                "team": 1,
-                                "slot": 1
-                            },
-                            {
-                                "user_id": 6090175,
-                                "score": 291737,
-                                "accuracy": 0,
-                                "max_combo": 315,
-                                "count50": 1,
-                                "count100": 102,
-                                "count300": 647,
+                                "max_combo": 219,
+                                "count50": 3,
+                                "count100": 17,
+                                "count300": 428,
                                 "count_miss": 5,
                                 "pass": 1,
                                 "enable_mods": 0,
-                                "team": 1,
-                                "slot": 2
+                                "team": 0,
+                                "slot": 0
                             },
                             {
-                                "user_id": 9240047,
-                                "score": 84096,
+                                "_id": "5fc9d1fe96863adcdd478572",
+                                "score": 357808,
+                                "user_id": 9043058,
                                 "accuracy": 0,
-                                "max_combo": 109,
-                                "count50": 7,
-                                "count100": 198,
-                                "count300": 522,
-                                "count_miss": 28,
+                                "max_combo": 204,
+                                "count50": 1,
+                                "count100": 28,
+                                "count300": 413,
+                                "count_miss": 11,
                                 "pass": 1,
-                                "enable_mods": 16,
-                                "team": 2,
-                                "slot": 4
-                            },
-                            {
-                                "user_id": 11076938,
-                                "score": 165109,
-                                "accuracy": 0,
-                                "max_combo": 121,
-                                "count50": 4,
-                                "count100": 98,
-                                "count300": 634,
-                                "count_miss": 19,
-                                "pass": 1,
-                                "enable_mods": 16,
-                                "team": 2,
-                                "slot": 6
+                                "enable_mods": 0,
+                                "team": 0,
+                                "slot": 1
                             }
                         ]
                     }
                 ]
-            },
-
+            }
         }

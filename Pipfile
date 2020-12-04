@@ -18,6 +18,7 @@ urllib3 = "*"
 pymongo = "*"
 uvicorn = "*"
 orjson = "*"
+aiohttp = "*"
 
 [requires]
 python_version = "3.8"
