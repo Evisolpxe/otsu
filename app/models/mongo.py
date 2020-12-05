@@ -3,7 +3,11 @@ from pydantic import BaseModel, BaseConfig
 
 
 class PyObjectId(ObjectId):
-
+    """
+    开启orm转换模式非常方便，但是无法正确显示object_id
+    原因是pydantic无法直接转换mongo object
+    新建一个类型用于通过检测和转换。
+    """
     @classmethod
     def __get_validators__(cls):
         yield cls.validate

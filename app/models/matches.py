@@ -3,6 +3,7 @@ from typing import Optional, List
 
 from mongoengine import (
     Document,
+DynamicDocument,
     IntField,
     FloatField,
     StringField,
@@ -10,10 +11,11 @@ from mongoengine import (
     ListField,
     DictField,
     ReferenceField,
-    PULL
+    PULL,
+    CASCADE
 )
 
-from ..api import api_v1
+from app.api import api_v1
 
 
 class MatchScore(Document):
@@ -147,49 +149,21 @@ class Match(Document):
                 game.delete()
             return match.delete()
 
-    # def to_dict(self):
-    #     return {
-    #         'match_id': self.match_id,
-    #         'name': self.name,
-    #         'start_time': self.start_time,
-    #         'end_time': self.end_time,
-    #         'games': [{
-    #             'game_id': game.game_id,
-    #             'start_time': game.start_time,
-    #             'end_time': game.end_time,
-    #             'beatmap_id': game.beatmap_id,
-    #             'play_mode': game.play_mode,
-    #             'scoring_type': game.scoring_type,
-    #             'team_type': game.team_type,
-    #             'match_type': game.match_type,
-    #             'mods': game.mods,
-    #             'scores': [{
-    #                 'user_id': score.user_id,
-    #                 'score': score.score,
-    #                 'accuracy': score.accuracy,
-    #                 'max_combo': score.max_combo,
-    #                 'count50': score.count50,
-    #                 'count100': score.count100,
-    #                 'count300': score.count300,
-    #                 'count_miss': score.count_miss,
-    #                 'pass': score.pass_,
-    #                 'enable_mods': score.enable_mods,
-    #                 'team': score.team,
-    #                 'slot': score.slot
-    #             } for score in game.scores]
-    #         } for game in self.games]
-    #     }
 
-
-class GameResult(Document):
-    game_id = ReferenceField(MatchGame)
+class GameResult(DynamicDocument):
+    """
+    team: if mode doesn't support teams it is 0, otherwise 1 = blue, 2 = red
+    """
+    game_id = ReferenceField(MatchGame, reverse_delete_rule=CASCADE)
     winner_team = IntField()
     game_winner = ListField(IntField())
+    rank_point = DictField()
+    player_team = DictField()
 
 
-class MatchResult(Document):
-    match = ReferenceField(Match)
-    win_scoring_type = IntField()
+class MatchResult(DynamicDocument):
+    match_id = ReferenceField(Match, reverse_delete_rule=CASCADE)
+    winner_team = IntField()
     match_winner = ListField(IntField())
 
     performance_rule = StringField()
@@ -201,3 +175,5 @@ class MatchResult(Document):
     def parse_match(cls, match_id: int):
         if match := Match.get_match(match_id):
             pass
+
+

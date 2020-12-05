@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Dict, Optional
+from typing import List, Set, Dict, Optional
 
 from pydantic import Field
 
@@ -95,3 +95,21 @@ class MatchSchema(MongoModel):
                 ]
             }
         }
+
+
+class GameResultSchema(MongoModel):
+    game_id: int
+    winner_team: int
+    game_winner: List[int]
+    rank_point: Dict[str, float]
+    player_team: Dict[str, Set[int]]
+
+
+class MatchResultSchema(MongoModel):
+    match_id: int
+    winner_team: int
+    match_winner: List[int]
+    performance_rule: str
+    performance_rank: dict
+
+    game_results: List[GameResultSchema]
