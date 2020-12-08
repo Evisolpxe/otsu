@@ -7,7 +7,7 @@ from operator import itemgetter
 from collections import defaultdict
 
 from app.models import Match, MatchResult, GameResult
-from app.schemas import GameResultSchema, MatchResultSchema
+from app.schemas import GameResultSchema, MatchResultSchema, ScoreSchema
 
 
 class BaseRule:
@@ -77,8 +77,6 @@ class BaseRule:
 
     def save_to_db(self):
         if self._validation:
-            print([{**dict(i)}
-                   for i in self.game_results])
             MatchResult(
                 match_id=self.match.match_id,
                 winner_team=self.winner_team,
@@ -132,8 +130,6 @@ class HeadToHeadRule(BaseRule):
         if self._validation:
             self.result = self.run()
 
-    def default_player_dict(self):
-        return {'total': 0, 'times': 0}
 
     def run(self) -> list:
         point_counts = defaultdict(self.default_player_dict)
@@ -151,18 +147,18 @@ class EloRule(BaseRule):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.win_bonus: float = 0.035
-        self.threshold: float = 0.115
+        self._win_bonus: float = 0.035
+        self._threshold: float = 0.115
 
         self.name = 'elo'
         self.description = '标准elo算法。'
 
-        self._minimum_games_check(2)
-
-        self.match_point = defaultdict(int)
+        self._minimum_games_check(4)
+        self._calc_game_results()
+        self._calc_match_result()
 
     @staticmethod
-    def rank_point_limiter(rank_point):
+    def _rank_point_limiter(rank_point):
         if rank_point > 0.08:
             return 0.08
         elif rank_point < -0.03:
@@ -171,16 +167,34 @@ class EloRule(BaseRule):
             return rank_point
 
     @staticmethod
-    def score_v1_no_fail_check(score):
-        # 1 == no fail
+    def _score_v1_no_fail_check(score: ScoreSchema.score, scoring_type: int):
+        # enable_mods :1 == no fail
+        # scoring_type :0 == v1
         if score.enable_mods & 1:
             return score.score * 2
 
-    def calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
-        return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self.threshold + bonus, 4)
+    def _calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
+        return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self._threshold + bonus, 4)
 
-    def run(self):
-        pass
+    @staticmethod
+    def _calc_winner_team(self, scores: ScoreSchema):
+        for score in scores:
+            if score
+
+    def _calc_game_results(self):
+        for game in self.valid_game:
+            valid_scores = [score for score in game.scores if score.score >= 10000]
+            if len(valid_scores) != 2:
+                self._validation = False
+                self._message = '比赛人数不足2人，无法使用elo规则哦！'
+                break
+
+            #
+            sum_sqrt_score = sum([sqrt(self._score_v1_no_fail_check(i, game.scoring_type))
+                                  for i in game.scores])
+
+            for score in game.scores:
+                bonus
 
 # class PerformanceLibrary(Enum):
 #     solo = SoloRule

@@ -6,7 +6,7 @@ from pydantic import Field
 from app.models.mongo import MongoModel, PyObjectId
 
 
-class ScoresSchema(MongoModel):
+class ScoreSchema(MongoModel):
     id: PyObjectId = Field(alias="_id")
     score: int
     user_id: int
@@ -23,7 +23,7 @@ class ScoresSchema(MongoModel):
     slot: int
 
 
-class GamesSchema(MongoModel):
+class GameSchema(MongoModel):
     game_id: int = Field(...)
     start_time: datetime.datetime
     end_time: Optional[datetime.datetime] = None
@@ -32,7 +32,7 @@ class GamesSchema(MongoModel):
     match_type: int
     scoring_type: int
     mods: int
-    scores: List[ScoresSchema]
+    scores: List[ScoreSchema]
 
 
 class MatchSchema(MongoModel):
@@ -40,7 +40,7 @@ class MatchSchema(MongoModel):
     name: str
     start_time: datetime.datetime
     end_time: Optional[datetime.datetime] = None
-    games: List[GamesSchema]
+    games: List[GameSchema]
 
     class Config:
         schema_extra = {
