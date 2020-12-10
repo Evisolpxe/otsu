@@ -179,7 +179,7 @@ class EloRule(BaseRule):
     @staticmethod
     def _calc_winner_team(self, scores: ScoreSchema):
         for score in scores:
-            if score
+            pass
 
     def _calc_game_results(self):
         for game in self.valid_game:
