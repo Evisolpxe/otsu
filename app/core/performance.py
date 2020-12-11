@@ -6,7 +6,7 @@ from typing import List, Callable, Optional
 from operator import itemgetter
 from collections import defaultdict
 
-from app.models import Match, MatchResult, GameResult
+from app.models.matches import Match, MatchResult, GameResult
 from app.schemas import GameResultSchema, MatchResultSchema, ScoreSchema
 
 
@@ -37,6 +37,7 @@ class BaseRule:
         self.game_results: List[GameResultSchema] = []
         self.winner_team = 0
         self.match_winner = []
+        self.player_list = set()
 
     def _remove_invalid_game(self) -> Match.games:
         # 滤过少于一人的对局以及热手和非赛图以及未结束的比赛(abort)
@@ -72,21 +73,24 @@ class BaseRule:
             # 统计各队玩家
             for team, player in game.player_team.items():
                 team_player[team].update(player)
+                self.player_list.update(player)
             self.match_winner = list(team_player[self.winner_team]) if self.winner_team \
                 else [max(total_rank_point, key=total_rank_point.get)]
 
     def save_to_db(self):
+        response = {'message': self._message, 'validation': self._validation}
         if self._validation:
-            MatchResult(
+            match_result = MatchResult(
                 match_id=self.match.match_id,
                 winner_team=self.winner_team,
+                player_list=self.player_list,
                 match_winner=self.match_winner,
                 performance_rule=self.__class__.__qualname__,
                 performance_rank=self.performance_rank,
-                game_results=[GameResult(**dict(i)).save()
-                              for i in self.game_results]
+                game_results=[GameResult(**dict(i)).save() for i in self.game_results]
             ).save()
-        return {'message': self._message, 'validation': self._validation}
+            response['match_result'] = match_result
+        return response
 
 
 class SoloRule(BaseRule):
@@ -129,7 +133,6 @@ class HeadToHeadRule(BaseRule):
         self._minimum_games_check(2)
         if self._validation:
             self.result = self.run()
-
 
     def run(self) -> list:
         point_counts = defaultdict(self.default_player_dict)

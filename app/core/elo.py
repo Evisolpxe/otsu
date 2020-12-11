@@ -3,9 +3,9 @@ from math import sqrt
 
 class EloCalculator:
 
-    def __init__(self, rank_dict: dict):
+    def __init__(self, rank_dict: dict, player_elo: dict):
         self.rank_dict = rank_dict
-        self.player_elo = {i: get_user(i).elo[-1].elo for i in rank_dict.keys()}
+        self.player_elo = player_elo
         self._add_virtual_player()
 
     @staticmethod

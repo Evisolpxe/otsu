@@ -3,7 +3,6 @@ from typing import List, Union
 from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
 
-
 from app.models import matches as models
 from app.core.performance import SoloRule
 from app.schemas import MatchSchema
@@ -18,6 +17,16 @@ router = APIRouter()
 async def get_match(match_id: int):
     if match := models.Match.get_match(match_id):
         return SoloRule(match=match).save_to_db()
+        # return match
+
+
+@router.post('/{match_id}',
+             summary='解析比赛结果并计算ELO。',
+             # response_model=MatchSchema,
+             response_class=ORJSONResponse)
+async def get_match(match_id: int, ):
+    if match := models.Match.get_match(match_id):
+        models.MatchResult.add_match_result(match_id, 'solo')
         # return match
 
 
@@ -40,4 +49,3 @@ async def delete_match_game(game_id: int):
                response_class=ORJSONResponse)
 async def delete_match_game(score_id: int):
     return models.MatchGame.delete_game(score_id)
-

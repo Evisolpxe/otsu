@@ -1,8 +1,5 @@
 from mongoengine import connect
 
-from app.models.matches import *
-
-
 connect('otsu-v2')
 
 # MatchGame.drop_collection()

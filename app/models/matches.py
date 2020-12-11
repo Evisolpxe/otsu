@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from mongoengine import (
     Document,
-DynamicDocument,
+    DynamicDocument,
     IntField,
     FloatField,
     StringField,
@@ -16,6 +16,8 @@ DynamicDocument,
 )
 
 from app.api import api_v1
+
+from app.models.elo import UserElo
 
 
 class MatchScore(Document):
@@ -165,6 +167,7 @@ class MatchResult(DynamicDocument):
     match_id = ReferenceField(Match, reverse_delete_rule=CASCADE)
     winner_team = IntField()
     match_winner = ListField(IntField())
+    player_list = ListField(IntField())
 
     performance_rule = StringField()
     performance_rank = DictField()
@@ -172,8 +175,27 @@ class MatchResult(DynamicDocument):
     game_results = ListField(ReferenceField(GameResult))
 
     @classmethod
-    def parse_match(cls, match_id: int):
+    def get_match_result(cls, match_id: int):
+        pass
+
+    @classmethod
+    def add_match_result(cls, match_id: int, rule: str, warm_up: int = 0, mappool: str = None):
+        from app.core import performance, elo
+
+        available_rule = {'solo': performance.SoloRule}
+        if match_result := cls.get_match_result(match_id):
+            return match_result
+
         if match := Match.get_match(match_id):
-            pass
-
-
+            # 解析比赛
+            response = available_rule.get(rule)(match=match).save_to_db()
+            # 失败则停止解析
+            if not response.get('validation'):
+                return response
+            match_result = response.get('match_result')
+            # 获得刚刚解析完的最终排名
+            rank_result = match_result.performance_rank
+            # 获得玩家ELO
+            user_elo = [UserElo.get_user_elo(i) for i in match_result.player_list]
+            print(rank_result, user_elo)
+            # elo_result = elo.EloCalculator(rank_result, )
