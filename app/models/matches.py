@@ -17,7 +17,7 @@ from mongoengine import (
 
 from app.api import api_v1
 
-from app.models.elo import UserElo
+from app.models.elo import UserElo, EloChange
 
 
 class MatchScore(Document):
@@ -176,26 +176,29 @@ class MatchResult(DynamicDocument):
 
     @classmethod
     def get_match_result(cls, match_id: int):
-        pass
+        return cls.objects(match_id=match_id).first()
 
     @classmethod
-    def add_match_result(cls, match_id: int, rule: str, warm_up: int = 0, mappool: str = None):
-        from app.core import performance, elo
+    def add_match_result(
+            cls,
+            match_id: int,
+            rule: str,
+            warm_up: int = 0,
+            map_pool: str = None) -> Optional[MatchResult, dict]:
+        from app.core import performance
 
         available_rule = {'solo': performance.SoloRule}
         if match_result := cls.get_match_result(match_id):
             return match_result
 
+        # 如获取不到就重新解析
         if match := Match.get_match(match_id):
+            # 寻找可用算法
+            if not (rule := available_rule.get(rule)):
+                return {'message': '没有找到可用的算法!'}
             # 解析比赛
-            response = available_rule.get(rule)(match=match).save_to_db()
+            rule_instance = rule(match=match, warm_up=warm_up, map_pool=map_pool)
             # 失败则停止解析
-            if not response.get('validation'):
-                return response
-            match_result = response.get('match_result')
-            # 获得刚刚解析完的最终排名
-            rank_result = match_result.performance_rank
-            # 获得玩家ELO
-            user_elo = [UserElo.get_user_elo(i) for i in match_result.player_list]
-            print(rank_result, user_elo)
-            # elo_result = elo.EloCalculator(rank_result, )
+            if not rule_instance.response.get('validation'):
+                return rule_instance
+            return rule_instance.save_to_db()

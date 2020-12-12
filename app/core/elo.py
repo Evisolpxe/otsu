@@ -6,6 +6,7 @@ class EloCalculator:
     def __init__(self, rank_dict: dict, player_elo: dict):
         self.rank_dict = rank_dict
         self.player_elo = player_elo
+        print(self.player_elo)
         self._add_virtual_player()
 
     @staticmethod

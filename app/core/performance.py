@@ -27,6 +27,7 @@ class BaseRule:
         """
         self._validation = True
         self._message = '解析成功！'
+        self.response = {'message': self._message, 'validation': self._validation}
 
         self.match = match
         self.warm_up = warm_up
@@ -52,6 +53,11 @@ class BaseRule:
             self._validation = False
             self._message = f'有效对局为{len(self.match.games)}局，至少需要{times}局才可记录成绩。'
 
+    def _calc_game_results(self) -> None:
+        # 在子类实现
+        # self._calc_game_results() -> self.game_results: List[GameResultSchema]
+        pass
+
     def _calc_match_result(self) -> None:
         total_rank_point = defaultdict(int)
         win_team_counts = defaultdict(int)
@@ -59,11 +65,11 @@ class BaseRule:
 
         for game in self.game_results:
             # 统计全场rank_point值
-            user, rank_point = game.rank_point.popitem()
-            total_rank_point[user] += rank_point
+            for user, rank_point in game.rank_point.items():
+                total_rank_point[user] += rank_point
             self.performance_rank = {
                 user: rank for rank, user in enumerate(
-                    sorted(total_rank_point, key=total_rank_point.get, reverse=True), 1)
+                    sorted(total_rank_point, key=total_rank_point.get), 1)
             }
 
             # 通过胜场最多的队伍得到胜利队
@@ -77,8 +83,7 @@ class BaseRule:
             self.match_winner = list(team_player[self.winner_team]) if self.winner_team \
                 else [max(total_rank_point, key=total_rank_point.get)]
 
-    def save_to_db(self):
-        response = {'message': self._message, 'validation': self._validation}
+    def save_to_db(self) -> Optional[MatchResult]:
         if self._validation:
             match_result = MatchResult(
                 match_id=self.match.match_id,
@@ -89,8 +94,7 @@ class BaseRule:
                 performance_rank=self.performance_rank,
                 game_results=[GameResult(**dict(i)).save() for i in self.game_results]
             ).save()
-            response['match_result'] = match_result
-        return response
+            return match_result
 
 
 class SoloRule(BaseRule):
@@ -114,7 +118,6 @@ class SoloRule(BaseRule):
                 self._message = '比赛人数不为2人，无法使用单挑规则哦！'
                 break
             sorted_ranking = sorted(game.scores, key=itemgetter('score'))
-
             self.game_results.append(
                 GameResultSchema(
                     game_id=game.game_id,
@@ -197,7 +200,7 @@ class EloRule(BaseRule):
                                   for i in game.scores])
 
             for score in game.scores:
-                bonus
+                pass
 
 # class PerformanceLibrary(Enum):
 #     solo = SoloRule

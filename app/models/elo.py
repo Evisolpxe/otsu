@@ -75,7 +75,8 @@ class UserElo(DynamicDocument):
 
     @classmethod
     def init_user_elo(cls, user_id: int, pp_rank: int):
-        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank)).save()
+        elo = cls._calc_init_elo(pp_rank)
+        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=elo, current_elo=elo).save()
 
     def update_user_elo(self):
         current_elo = self.init_elo + sum([i.difference for i in self.elo_change_list])
