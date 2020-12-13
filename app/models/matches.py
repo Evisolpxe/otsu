@@ -184,21 +184,53 @@ class MatchResult(DynamicDocument):
             match_id: int,
             rule: str,
             warm_up: int = 0,
-            map_pool: str = None) -> Optional[MatchResult, dict]:
+            map_pool: str = None) -> Optional[dict]:
         from app.core import performance
 
         available_rule = {'solo': performance.SoloRule}
-        if match_result := cls.get_match_result(match_id):
-            return match_result
+        if cls.get_match_result(match_id):
+            return {'message': '本场比赛已经记录了成绩哦!', 'validation': False}
 
         # 如获取不到就重新解析
         if match := Match.get_match(match_id):
             # 寻找可用算法
             if not (rule := available_rule.get(rule)):
-                return {'message': '没有找到可用的算法!'}
+                return {'message': '没有找到可用的算法!', 'validation': False}
             # 解析比赛
             rule_instance = rule(match=match, warm_up=warm_up, map_pool=map_pool)
             # 失败则停止解析
-            if not rule_instance.response.get('validation'):
-                return rule_instance
             return rule_instance.save_to_db()
+        return {'message': '没有找到可用对局。', 'validation': False}
+
+    def calc_elo(self):
+        from app.models import elo
+        from app.core.elo import EloCalculator
+
+        # 删除本场后的所有elo数据
+        related_matches_elo_change_before_this = self.get_all_match_involved_users(self.player_list,
+                                                                                   self.match_id)
+        print(related_matches_elo_change_before_this)
+        for match in related_matches_elo_change_before_this:
+            match.delete_elo()
+
+        elo_result = EloCalculator(
+            self.performance_rank,
+            {user_id: elo.UserElo.get_user_elo(user_id).current_elo for user_id in self.player_list}
+        ).run()
+
+        elo.EloChange.add_elo_result(self.match_id.match_id, elo_result.get('elo_change'))
+
+        for match in related_matches_elo_change_before_this:
+            match.calc_elo()
+
+        elo_result['player_elo'].pop('max')
+        elo_result['player_elo'].pop('min')
+        return elo_result
+
+    def delete_elo(self):
+        from app.models import elo
+        elo.EloChange.delete_elo_result(self.match_id.match_id)
+
+    @classmethod
+    def get_all_match_involved_users(cls, user_id_list: list, current_match_id: int = 0) -> List[MatchResult]:
+        return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id).order_by('+match_id').all()

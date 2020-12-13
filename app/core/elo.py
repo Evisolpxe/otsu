@@ -6,7 +6,6 @@ class EloCalculator:
     def __init__(self, rank_dict: dict, player_elo: dict):
         self.rank_dict = rank_dict
         self.player_elo = player_elo
-        print(self.player_elo)
         self._add_virtual_player()
 
     @staticmethod
@@ -48,7 +47,7 @@ class EloCalculator:
         self.player_elo['max'] = sorted_elo_list[0] + max(400, sorted_elo_list[0] - sorted_elo_list[1])
         self.player_elo['min'] = sorted_elo_list[-1] - max(400, sorted_elo_list[0] - sorted_elo_list[1])
 
-    def main(self) -> dict:
+    def run(self) -> dict:
         d_i_list, elo_change_dict = [], {}
         for player_id, elo in self.player_elo.items():
             if player_id not in ('min', 'max'):

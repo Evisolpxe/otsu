@@ -69,7 +69,7 @@ class BaseRule:
                 total_rank_point[user] += rank_point
             self.performance_rank = {
                 user: rank for rank, user in enumerate(
-                    sorted(total_rank_point, key=total_rank_point.get), 1)
+                    sorted(total_rank_point, key=total_rank_point.get, reverse=True), 1)
             }
 
             # 通过胜场最多的队伍得到胜利队
@@ -80,10 +80,10 @@ class BaseRule:
             for team, player in game.player_team.items():
                 team_player[team].update(player)
                 self.player_list.update(player)
-            self.match_winner = list(team_player[self.winner_team]) if self.winner_team \
-                else [max(total_rank_point, key=total_rank_point.get)]
+        self.match_winner = list(team_player[self.winner_team]) if self.winner_team \
+            else [max(total_rank_point, key=total_rank_point.get)]
 
-    def save_to_db(self) -> Optional[MatchResult]:
+    def save_to_db(self) -> Optional[dict]:
         if self._validation:
             match_result = MatchResult(
                 match_id=self.match.match_id,
@@ -94,7 +94,8 @@ class BaseRule:
                 performance_rank=self.performance_rank,
                 game_results=[GameResult(**dict(i)).save() for i in self.game_results]
             ).save()
-            return match_result
+            self.response['match_result'] = match_result
+            return self.response
 
 
 class SoloRule(BaseRule):
@@ -117,7 +118,7 @@ class SoloRule(BaseRule):
                 self._validation = False
                 self._message = '比赛人数不为2人，无法使用单挑规则哦！'
                 break
-            sorted_ranking = sorted(game.scores, key=itemgetter('score'))
+            sorted_ranking = sorted(game.scores, key=itemgetter('score'), reverse=True)
             self.game_results.append(
                 GameResultSchema(
                     game_id=game.game_id,

@@ -29,7 +29,7 @@ class EloChange(Document):
     @classmethod
     def add_elo_result(cls, match_id: int, elo_change: dict) -> Optional[List[EloChange]]:
         return [cls(match_id=match_id, user_id=user_id, difference=difference).save()
-                for user_id, difference in elo_change]
+                for user_id, difference in elo_change.items()]
 
     @classmethod
     def get_elo_result(cls, match_id: int) -> Optional[List[EloChange]]:
@@ -53,14 +53,20 @@ class UserElo(DynamicDocument):
     user_id = IntField(required=True)
     season = StringField()
     init_elo = IntField(required=True)
-    current_elo = IntField()
 
-    elo_change_list = ListField(ReferenceField('EloChange', reverse_delete_rule=PULL))
     create_time = DateTimeField(default=datetime.datetime.utcnow)
 
     meta = {
         'indexes': ['user_id']
     }
+
+    @property
+    def current_elo(self):
+        return self.init_elo + sum([i.difference for i in self.elo_change_list])
+
+    @property
+    def elo_change_list(self):
+        return EloChange.objects(user_id=self.user_id).order_by('match_id').all()
 
     @staticmethod
     def _calc_init_elo(rank: int):
@@ -75,9 +81,5 @@ class UserElo(DynamicDocument):
 
     @classmethod
     def init_user_elo(cls, user_id: int, pp_rank: int):
-        elo = cls._calc_init_elo(pp_rank)
-        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=elo, current_elo=elo).save()
+        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank)).save()
 
-    def update_user_elo(self):
-        current_elo = self.init_elo + sum([i.difference for i in self.elo_change_list])
-        return self.modify(current_elo=current_elo)
