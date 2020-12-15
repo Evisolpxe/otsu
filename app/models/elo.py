@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import datetime
 from math import log
 from typing import Optional, List
+from functools import singledispatch
 
 from mongoengine import (
     Document,
@@ -50,9 +52,10 @@ class EloChange(Document):
 
 
 class UserElo(DynamicDocument):
-    user_id = IntField(required=True)
+    user_id = IntField(required=True, unique_with='mode')
     season = StringField()
     init_elo = IntField(required=True)
+    mode = ReferenceField('EloFestival', reverse_delete_rule=CASCADE)
 
     create_time = DateTimeField(default=datetime.datetime.utcnow)
 
@@ -83,3 +86,32 @@ class UserElo(DynamicDocument):
     def init_user_elo(cls, user_id: int, pp_rank: int):
         return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank)).save()
 
+
+class EloFestival(DynamicDocument):
+    name = StringField(required=True)
+    start_time = DateTimeField(required=True)
+    end_time = DateTimeField()
+    status = StringField(required=True, choices=['Pending', 'Running', 'Finished'])
+
+    player_list = ListField(IntField())
+
+    @singledispatch
+    def add_player(self):
+        pass
+
+    @add_player.register(int)
+    def _(self, user: int) -> None:
+        return self.modify(player_list__push=user)
+
+    @add_player.register(list)
+    def _(self, user_list: list) -> None:
+        return self.modify(player_list__push_all=user_list)
+
+    def set_end_time(self, end_time: datetime.datetime):
+        if end_time > self.start_time:
+            return self.modify(end_time=end_time)
+
+    @property
+    def if_expired(self):
+        if datetime.datetime.now() > self.end_time:
+            return True

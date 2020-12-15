@@ -183,6 +183,7 @@ class MatchResult(DynamicDocument):
             cls,
             match_id: int,
             rule: str,
+            festival: str,
             warm_up: int = 0,
             map_pool: str = None) -> Optional[dict]:
         from app.core import performance
@@ -206,13 +207,13 @@ class MatchResult(DynamicDocument):
         from app.models import elo
         from app.core.elo import EloCalculator
 
-        # 删除本场后的所有elo数据
+        # 获取较晚场次，删除本场后的所有相关场次elo数据
         related_matches_elo_change_before_this = self.get_all_match_involved_users(self.player_list,
                                                                                    self.match_id)
-        print(related_matches_elo_change_before_this)
         for match in related_matches_elo_change_before_this:
             match.delete_elo()
 
+        # 计算elo
         elo_result = EloCalculator(
             self.performance_rank,
             {user_id: elo.UserElo.get_user_elo(user_id).current_elo for user_id in self.player_list}
