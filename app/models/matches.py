@@ -17,7 +17,7 @@ from mongoengine import (
 
 from app.api import api_v1
 
-from app.models.elo import UserElo, EloChange
+from app.models.elo import UserElo, EloChange, EloFestival
 
 
 class MatchScore(Document):
@@ -105,6 +105,7 @@ class Match(Document):
     def get_match(cls, match_id: int) -> Optional[Match]:
 
         if match := cls.objects(match_id=match_id).first():
+
             return match
 
         if match_data := api_v1.get_match(match_id):
@@ -173,6 +174,7 @@ class MatchResult(DynamicDocument):
     performance_rank = DictField()
 
     game_results = ListField(ReferenceField(GameResult))
+    elo_festival = ReferenceField(EloFestival, reverse_delete_rule=CASCADE)
 
     @classmethod
     def get_match_result(cls, match_id: int):
@@ -182,23 +184,23 @@ class MatchResult(DynamicDocument):
     def add_match_result(
             cls,
             match_id: int,
-            rule: str,
-            festival: str,
+            elo_rule: str,
+            elo_festival: str,
             warm_up: int = 0,
             map_pool: str = None) -> Optional[dict]:
         from app.core import performance
 
-        available_rule = {'solo': performance.SoloRule}
+        available_rule = performance.Performance
         if cls.get_match_result(match_id):
             return {'message': '本场比赛已经记录了成绩哦!', 'validation': False}
 
         # 如获取不到就重新解析
         if match := Match.get_match(match_id):
             # 寻找可用算法
-            if not (rule := available_rule.get(rule)):
+            if not (rule := available_rule.__members__.get(elo_rule)):
                 return {'message': '没有找到可用的算法!', 'validation': False}
             # 解析比赛
-            rule_instance = rule(match=match, warm_up=warm_up, map_pool=map_pool)
+            rule_instance = rule.value(match=match, warm_up=warm_up, map_pool=map_pool)
             # 失败则停止解析
             return rule_instance.save_to_db()
         return {'message': '没有找到可用对局。', 'validation': False}

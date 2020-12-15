@@ -6,7 +6,8 @@ from fastapi.responses import ORJSONResponse
 from app.models import matches, elo
 from app.core.elo import EloCalculator
 from app.core.performance import SoloRule
-from app.schemas import MatchSchema
+from app.schemas.matches import MatchSchema
+from app.schemas.elo import MatchEloInSchema
 
 router = APIRouter()
 
@@ -26,13 +27,14 @@ async def get_match(match_id: int):
              # response_model=MatchSchema,
              # response_class=ORJSONResponse)
              )
-async def add_match_elo(match_id: int):
-    match_response = matches.MatchResult.add_match_result(match_id, 'solo')
+async def add_match_elo(*,
+                        payload: MatchEloInSchema):
+    match_response = matches.MatchResult.add_match_result(payload.match_id, payload.elo_rule, payload.elo_festival)
     if not match_response.get('validation'):
         return match_response
     match_result = match_response.get('match_result')
     elo_change = match_result.calc_elo()
-
+    print(elo_change)
     return elo_change
 
 

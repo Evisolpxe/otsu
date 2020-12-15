@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 from math import log
 from typing import Optional, List
-from functools import singledispatch
 
 from mongoengine import (
     Document,
@@ -23,10 +22,32 @@ from app.models import users
 from global_config import CURRENT_SEASON
 
 
+class EloFestival(DynamicDocument):
+    name = StringField(required=True)
+    start_time = DateTimeField(required=True)
+    end_time = DateTimeField()
+    status = StringField(required=True, choices=['Pending', 'Running', 'Finished'])
+
+    player_list = ListField(IntField())
+
+    def add_player(self, user_list: List[int]):
+        return self.modify(player_list__push_all=user_list)
+
+    def set_end_time(self, end_time: datetime.datetime):
+        if end_time > self.start_time:
+            return self.modify(end_time=end_time)
+
+    @property
+    def if_expired(self):
+        if datetime.datetime.now() > self.end_time:
+            return True
+
+
 class EloChange(Document):
     match_id = IntField(required=True)
     user_id = IntField(required=True)
     difference = IntField(required=True)
+    mode = ReferenceField('EloFestival', reverse_delete_rule=CASCADE)
 
     @classmethod
     def add_elo_result(cls, match_id: int, elo_change: dict) -> Optional[List[EloChange]]:
@@ -69,7 +90,7 @@ class UserElo(DynamicDocument):
 
     @property
     def elo_change_list(self):
-        return EloChange.objects(user_id=self.user_id).order_by('match_id').all()
+        return EloChange.objects(user_id=self.user_id, mode=self.mode).order_by('match_id').all()
 
     @staticmethod
     def _calc_init_elo(rank: int):
@@ -83,35 +104,5 @@ class UserElo(DynamicDocument):
             return cls.init_user_elo(user.user_id, user.pp_rank)
 
     @classmethod
-    def init_user_elo(cls, user_id: int, pp_rank: int):
-        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank)).save()
-
-
-class EloFestival(DynamicDocument):
-    name = StringField(required=True)
-    start_time = DateTimeField(required=True)
-    end_time = DateTimeField()
-    status = StringField(required=True, choices=['Pending', 'Running', 'Finished'])
-
-    player_list = ListField(IntField())
-
-    @singledispatch
-    def add_player(self):
-        pass
-
-    @add_player.register(int)
-    def _(self, user: int) -> None:
-        return self.modify(player_list__push=user)
-
-    @add_player.register(list)
-    def _(self, user_list: list) -> None:
-        return self.modify(player_list__push_all=user_list)
-
-    def set_end_time(self, end_time: datetime.datetime):
-        if end_time > self.start_time:
-            return self.modify(end_time=end_time)
-
-    @property
-    def if_expired(self):
-        if datetime.datetime.now() > self.end_time:
-            return True
+    def init_user_elo(cls, user_id: int, pp_rank: int, mode: str):
+        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank), mode=mode).save()

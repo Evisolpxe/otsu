@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 from math import sqrt
 
@@ -6,14 +7,15 @@ from typing import List, Callable, Optional
 from operator import itemgetter
 from collections import defaultdict
 
-from app.models.matches import Match, MatchResult, GameResult
-from app.schemas import GameResultSchema, MatchResultSchema, ScoreSchema
+from app.models.matches import Match, MatchResult, GameResult, EloFestival
+from app.schemas.matches import GameResultSchema, ScoreSchema
 
 
 class BaseRule:
 
     def __init__(self,
                  match: Match,
+                 elo_festival: EloFestival,
                  warm_up: int = 0,
                  map_pool: List[int] = None):
         """
@@ -30,6 +32,7 @@ class BaseRule:
         self.response = {'message': self._message, 'validation': self._validation}
 
         self.match = match
+        self.elo_festival=elo_festival
         self.warm_up = warm_up
         self.map_pool = map_pool
 
@@ -92,7 +95,8 @@ class BaseRule:
                 match_winner=self.match_winner,
                 performance_rule=self.__class__.__qualname__,
                 performance_rank=self.performance_rank,
-                game_results=[GameResult(**dict(i)).save() for i in self.game_results]
+                game_results=[GameResult(**dict(i)).save() for i in self.game_results],
+                elo_festival=self.elo_festival
             ).save()
             self.response['match_result'] = match_result
             return self.response
@@ -203,6 +207,11 @@ class EloRule(BaseRule):
             for score in game.scores:
                 pass
 
+
 # class PerformanceLibrary(Enum):
 #     solo = SoloRule
 #     elo = EloRule
+
+class Performance(Enum):
+    solo = SoloRule
+    elo = EloRule

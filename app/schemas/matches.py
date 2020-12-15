@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 from typing import List, Set, Dict, Optional
 
 from pydantic import Field
@@ -113,3 +114,5 @@ class MatchResultSchema(MongoModel):
     performance_rank: dict
 
     game_results: List[GameResultSchema]
+
+

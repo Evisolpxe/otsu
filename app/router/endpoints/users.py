@@ -6,7 +6,7 @@ from fastapi.responses import ORJSONResponse
 from app.models import matches, elo, users
 from app.core.elo import EloCalculator
 from app.core.performance import SoloRule
-from app.schemas import UserEloSchema
+from app.schemas.users import UserEloSchema
 
 router = APIRouter()
 
