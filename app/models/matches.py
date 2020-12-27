@@ -105,7 +105,6 @@ class Match(Document):
     def get_match(cls, match_id: int) -> Optional[Match]:
 
         if match := cls.objects(match_id=match_id).first():
-
             return match
 
         if match_data := api_v1.get_match(match_id):
@@ -146,6 +145,8 @@ class Match(Document):
     @classmethod
     def delete_match(cls, match_id: int) -> int:
         if match := cls.objects(match_id=match_id).first():
+            if match_result := MatchResult.get_match_result(match_id):
+                match_result.delete_elo()
             for game in match.games:
                 for score in game.scores:
                     score.delete()
@@ -177,7 +178,7 @@ class MatchResult(DynamicDocument):
     elo_festival = ReferenceField(EloFestival, reverse_delete_rule=CASCADE)
 
     @classmethod
-    def get_match_result(cls, match_id: int):
+    def get_match_result(cls, match_id: int) -> MatchResult:
         return cls.objects(match_id=match_id).first()
 
     @classmethod
@@ -185,7 +186,7 @@ class MatchResult(DynamicDocument):
             cls,
             match_id: int,
             elo_rule: str,
-            elo_festival: str,
+            elo_festival: EloFestival,
             warm_up: int = 0,
             map_pool: str = None) -> Optional[dict]:
         from app.core import performance
@@ -200,7 +201,7 @@ class MatchResult(DynamicDocument):
             if not (rule := available_rule.__members__.get(elo_rule)):
                 return {'message': '没有找到可用的算法!', 'validation': False}
             # 解析比赛
-            rule_instance = rule.value(match=match, warm_up=warm_up, map_pool=map_pool)
+            rule_instance = rule.value(match=match, warm_up=warm_up, map_pool=map_pool, elo_festival=elo_festival)
             # 失败则停止解析
             return rule_instance.save_to_db()
         return {'message': '没有找到可用对局。', 'validation': False}
@@ -218,10 +219,10 @@ class MatchResult(DynamicDocument):
         # 计算elo
         elo_result = EloCalculator(
             self.performance_rank,
-            {user_id: elo.UserElo.get_user_elo(user_id).current_elo for user_id in self.player_list}
+            {user_id: elo.UserElo.get_user_elo(user_id, self.elo_festival.name).current_elo for user_id in self.player_list}
         ).run()
 
-        elo.EloChange.add_elo_result(self.match_id.match_id, elo_result.get('elo_change'))
+        elo.EloChange.add_elo_result(self.match_id.match_id, elo_result.get('elo_change'), self.elo_festival)
 
         for match in related_matches_elo_change_before_this:
             match.calc_elo()
@@ -235,5 +236,5 @@ class MatchResult(DynamicDocument):
         elo.EloChange.delete_elo_result(self.match_id.match_id)
 
     @classmethod
-    def get_all_match_involved_users(cls, user_id_list: list, current_match_id: int = 0) -> List[MatchResult]:
-        return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id).order_by('+match_id').all()
+    def get_all_match_involved_users(cls, user_id_list: list, festival: str, current_match_id: int = 0) -> List[MatchResult]:
+        return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id, festival=festival).order_by('+match_id').all()

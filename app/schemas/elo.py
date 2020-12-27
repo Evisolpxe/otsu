@@ -1,3 +1,4 @@
+import datetime
 from typing import List, Set, Dict, Optional, Any
 
 from pydantic import Field
@@ -25,5 +26,23 @@ class MatchEloInSchema(MongoModel):
                 'elo_festival': 'wild',
                 'warm_up': 0,
                 'map_pool': ''
+            }
+        }
+
+
+class EloFestivalSchema(MongoModel):
+    name: str = Field(...)
+    acronym: str = Field(...)
+    start_time: datetime.datetime = Field(...)
+    end_time: datetime.datetime = None
+    status: str = None
+
+    class Config:
+        schema_extra = {
+            'example': {
+                'name': 'EloWeeklyCup Season1',
+                'acronym': 'EWC S1',
+                'start_time': '2020-12-25 00:00',
+                'end_time': '2021-01-03 00:00',
             }
         }

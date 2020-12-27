@@ -13,3 +13,4 @@ class BaseFestival:
 
 
 class EwcSeasonHalf:
+    pass

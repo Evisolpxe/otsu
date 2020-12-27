@@ -12,10 +12,10 @@ router = APIRouter()
 
 
 @router.get('/{user_id}',
-            summary='获取比赛基础信息，与官网保持一致。',
+            summary='获取玩家elo信息。',
             response_model=UserEloSchema,
             response_class=ORJSONResponse)
-async def get_user(user_id: int):
-    if user := elo.UserElo.get_user_elo(user_id):
+async def get_user(user_id: int, elo_festival: str):
+    if user := elo.UserElo.get_user_elo(user_id, elo_festival):
         return user
     raise HTTPException(404, detail={'message': '没有这位玩家的信息哦。'})

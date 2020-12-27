@@ -14,12 +14,11 @@ router = APIRouter()
 
 @router.get('/{match_id}',
             summary='获取比赛基础信息，与官网保持一致。',
-            # response_model=MatchSchema,
+            response_model=MatchSchema,
             response_class=ORJSONResponse)
 async def get_match(match_id: int):
     if match := matches.Match.get_match(match_id):
-        return SoloRule(match=match).save_to_db()
-        # return match
+        return match
 
 
 @router.post('/{match_id}/elo',
@@ -29,12 +28,13 @@ async def get_match(match_id: int):
              )
 async def add_match_elo(*,
                         payload: MatchEloInSchema):
-    match_response = matches.MatchResult.add_match_result(payload.match_id, payload.elo_rule, payload.elo_festival)
+    if not (elo_festival := elo.EloFestival.get_festival(payload.elo_festival)):
+        raise HTTPException(404, detail='未找到festival信息!')
+    match_response = matches.MatchResult.add_match_result(payload.match_id, payload.elo_rule, elo_festival)
     if not match_response.get('validation'):
         return match_response
     match_result = match_response.get('match_result')
     elo_change = match_result.calc_elo()
-    print(elo_change)
     return elo_change
 
 

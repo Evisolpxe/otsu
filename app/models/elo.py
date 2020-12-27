@@ -15,26 +15,31 @@ from mongoengine import (
     DictField,
     ReferenceField,
     PULL,
-    CASCADE
+    CASCADE, Q
 )
 
-from app.models import users
+from app.models import users, matches
 from global_config import CURRENT_SEASON
 
 
 class EloFestival(DynamicDocument):
-    name = StringField(required=True)
+    name = StringField(required=True, unique=True)
+    acronym = StringField(required=True, unique=True)
     start_time = DateTimeField(required=True)
     end_time = DateTimeField()
-    status = StringField(required=True, choices=['Pending', 'Running', 'Finished'], default='Pending')
+    status = StringField(required=True, choices=['Pending', 'Opening', 'Running', 'Finished'], default='Pending')
 
-    player_list = ListField(IntField())
+    meta = {
+        'indexes': ['name', 'acronym']
+    }
 
-    def add_festival(self, name: str, start_time: datetime.datetime):
-        pass
+    @classmethod
+    def add_festival(cls, name: str, acronym: str, start_time: datetime.datetime) -> EloFestival:
+        return cls(name=name, acronym=acronym, start_time=start_time).save()
 
-    def add_player(self, user_list: List[int]):
-        return self.modify(player_list__push_all=user_list)
+    @classmethod
+    def get_festival(cls, name: str) -> EloFestival:
+        return cls.objects(Q(name=name) | Q(acronym=name)).first()
 
     def set_end_time(self, end_time: datetime.datetime):
         if end_time > self.start_time:
@@ -47,14 +52,15 @@ class EloFestival(DynamicDocument):
 
 
 class EloChange(Document):
+    # 注意：不把change和result绑定，是因为可能会出现比赛以外的elo变动。
     match_id = IntField(required=True)
     user_id = IntField(required=True)
     difference = IntField(required=True)
-    mode = ReferenceField('EloFestival', reverse_delete_rule=CASCADE)
+    elo_festival = ReferenceField('EloFestival', reverse_delete_rule=CASCADE)
 
     @classmethod
-    def add_elo_result(cls, match_id: int, elo_change: dict) -> Optional[List[EloChange]]:
-        return [cls(match_id=match_id, user_id=user_id, difference=difference).save()
+    def add_elo_result(cls, match_id: int, elo_change: dict, elo_festival: EloFestival) -> Optional[List[EloChange]]:
+        return [cls(match_id=match_id, user_id=user_id, difference=difference, elo_festival=elo_festival).save()
                 for user_id, difference in elo_change.items()]
 
     @classmethod
@@ -76,10 +82,10 @@ class EloChange(Document):
 
 
 class UserElo(DynamicDocument):
-    user_id = IntField(required=True, unique_with='mode')
+    user_id = IntField(required=True, unique_with='elo_festival')
     season = StringField()
     init_elo = IntField(required=True)
-    mode = ReferenceField('EloFestival', reverse_delete_rule=CASCADE)
+    elo_festival = ReferenceField('EloFestival', reverse_delete_rule=CASCADE)
 
     create_time = DateTimeField(default=datetime.datetime.utcnow)
 
@@ -93,19 +99,22 @@ class UserElo(DynamicDocument):
 
     @property
     def elo_change_list(self):
-        return EloChange.objects(user_id=self.user_id, mode=self.mode).order_by('match_id').all()
+        return EloChange.objects(user_id=self.user_id, elo_festival=self.elo_festival).order_by('match_id').all()
 
     @staticmethod
     def _calc_init_elo(rank: int):
         return int(1500 - 600 * log(((int(rank) + 500) / 8500), 4))
 
     @classmethod
-    def get_user_elo(cls, user_id: int) -> UserElo:
-        if user := cls.objects(user_id=user_id).first():
+    def get_user_elo(cls, user_id: int, elo_festival: str) -> Optional[UserElo]:
+        if not (elo_festival := EloFestival.get_festival(elo_festival)):
+            return
+        if user := cls.objects(user_id=user_id, elo_festival=elo_festival).first():
             return user
         if user := users.User.get_user(user_id):
-            return cls.init_user_elo(user.user_id, user.pp_rank)
+            return cls.init_user_elo(user.user_id, user.pp_rank, elo_festival)
 
     @classmethod
-    def init_user_elo(cls, user_id: int, pp_rank: int, mode: str):
-        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank), mode=mode).save()
+    def init_user_elo(cls, user_id: int, pp_rank: int, elo_festival: EloFestival):
+        return cls(user_id=user_id, season=CURRENT_SEASON, init_elo=cls._calc_init_elo(pp_rank),
+                   elo_festival=elo_festival).save()

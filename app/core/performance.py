@@ -32,7 +32,7 @@ class BaseRule:
         self.response = {'message': self._message, 'validation': self._validation}
 
         self.match = match
-        self.elo_festival=elo_festival
+        self.elo_festival = elo_festival
         self.warm_up = warm_up
         self.map_pool = map_pool
 
