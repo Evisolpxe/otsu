@@ -16,7 +16,6 @@ class MatchEloInSchema(MongoModel):
 
     def __init__(self, **data: Any):
         super().__init__(**data)
-        
 
     class Config:
         schema_extra = {

@@ -26,9 +26,12 @@ class EloFestival(DynamicDocument):
     name = StringField(required=True)
     start_time = DateTimeField(required=True)
     end_time = DateTimeField()
-    status = StringField(required=True, choices=['Pending', 'Running', 'Finished'])
+    status = StringField(required=True, choices=['Pending', 'Running', 'Finished'], default='Pending')
 
     player_list = ListField(IntField())
+
+    def add_festival(self, name: str, start_time: datetime.datetime):
+        pass
 
     def add_player(self, user_list: List[int]):
         return self.modify(player_list__push_all=user_list)
