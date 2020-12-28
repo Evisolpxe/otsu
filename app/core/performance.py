@@ -29,7 +29,6 @@ class BaseRule:
         """
         self._validation = True
         self._message = '解析成功！'
-        self.response = {'message': self._message, 'validation': self._validation}
 
         self.match = match
         self.elo_festival = elo_festival
@@ -42,6 +41,10 @@ class BaseRule:
         self.winner_team = 0
         self.match_winner = []
         self.player_list = set()
+
+    @property
+    def response(self):
+        return {'message': self._message, 'validation': self._validation}
 
     def _remove_invalid_game(self) -> Match.games:
         # 滤过少于一人的对局以及热手和非赛图以及未结束的比赛(abort)
@@ -98,9 +101,10 @@ class BaseRule:
                 game_results=[GameResult(**dict(i)).save() for i in self.game_results],
                 elo_festival=self.elo_festival
             ).save()
-            self.response['match_result'] = match_result
-            return self.response
-
+            response = self.response.copy()
+            response['match_result'] = match_result
+            return response
+        return self.response
 
 class SoloRule(BaseRule):
 
@@ -117,10 +121,10 @@ class SoloRule(BaseRule):
     def _calc_game_results(self) -> None:
         for game in self.valid_game:
 
-            valid_scores = [score for score in game.scores if score.score >= 10000]
+            valid_scores = [score for score in game.scores if score.score >= 5000]
             if len(valid_scores) != 2:
                 self._validation = False
-                self._message = '比赛人数不为2人，无法使用单挑规则哦！'
+                self._message = '某场对局人数不为2人，无法使用单挑规则哦！'
                 break
             sorted_ranking = sorted(game.scores, key=itemgetter('score'), reverse=True)
             self.game_results.append(

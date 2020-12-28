@@ -194,7 +194,6 @@ class MatchResult(DynamicDocument):
         available_rule = performance.Performance
         if cls.get_match_result(match_id):
             return {'message': '本场比赛已经记录了成绩哦!', 'validation': False}
-
         # 如获取不到就重新解析
         if match := Match.get_match(match_id):
             # 寻找可用算法
