@@ -34,7 +34,6 @@ async def add_match_elo(*,
     match_response = matches.MatchResult.add_match_result(match_id, payload.elo_rule, elo_festival)
     if not match_response.get('validation'):
         return match_response
-    print(match_response)
     match_result = match_response.get('match_result')
     elo_change = match_result.calc_elo()
     return elo_change

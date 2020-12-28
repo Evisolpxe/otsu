@@ -218,7 +218,8 @@ class MatchResult(DynamicDocument):
         # 计算elo
         elo_result = EloCalculator(
             self.performance_rank,
-            {user_id: elo.UserElo.get_user_elo(user_id, self.elo_festival.name).current_elo for user_id in self.player_list}
+            {user_id: elo.UserElo.get_user_elo(user_id, self.elo_festival.name).current_elo
+             for user_id in self.player_list}
         ).run()
 
         elo.EloChange.add_elo_result(self.match_id.match_id, elo_result.get('elo_change'), self.elo_festival)
@@ -226,8 +227,6 @@ class MatchResult(DynamicDocument):
         for match in related_matches_elo_change_before_this:
             match.calc_elo()
 
-        elo_result['player_elo'].pop('max')
-        elo_result['player_elo'].pop('min')
         return elo_result
 
     def delete_elo(self):
@@ -235,5 +234,7 @@ class MatchResult(DynamicDocument):
         elo.EloChange.delete_elo_result(self.match_id.match_id)
 
     @classmethod
-    def get_all_match_involved_users(cls, user_id_list: list, festival: str, current_match_id: int = 0) -> List[MatchResult]:
-        return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id, festival=festival).order_by('+match_id').all()
+    def get_all_match_involved_users(cls, user_id_list: list, festival: str, current_match_id: int = 0) -> List[
+        MatchResult]:
+        return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id, festival=festival).order_by(
+            '+match_id').all()

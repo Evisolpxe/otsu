@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 from math import sqrt
 
@@ -105,6 +104,7 @@ class BaseRule:
             response['match_result'] = match_result
             return response
         return self.response
+
 
 class SoloRule(BaseRule):
 
