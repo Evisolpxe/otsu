@@ -9,7 +9,6 @@ from app.rules import PerformanceEnum
 
 
 class MatchEloInSchema(MongoModel):
-    match_id: int = Field(...)
     elo_rule: str = Field(...)
     elo_festival: str = Field(...)
     warm_up: int = 0
@@ -21,7 +20,6 @@ class MatchEloInSchema(MongoModel):
     class Config:
         schema_extra = {
             'example': {
-                'match_id': 64389206,
                 'elo_rule': 'solo',
                 'elo_festival': 'wild',
                 'warm_up': 0,

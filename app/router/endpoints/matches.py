@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Path
 from fastapi.responses import ORJSONResponse
 
 from app.models import matches, elo
@@ -27,10 +27,11 @@ async def get_match(match_id: int):
              # response_class=ORJSONResponse)
              )
 async def add_match_elo(*,
+                        match_id: int = Path(...),
                         payload: MatchEloInSchema):
     if not (elo_festival := elo.EloFestival.get_festival(payload.elo_festival)):
         raise HTTPException(404, detail='未找到festival信息!')
-    match_response = matches.MatchResult.add_match_result(payload.match_id, payload.elo_rule, elo_festival)
+    match_response = matches.MatchResult.add_match_result(match_id, payload.elo_rule, elo_festival)
     if not match_response.get('validation'):
         return match_response
     match_result = match_response.get('match_result')
