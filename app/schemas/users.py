@@ -1,8 +1,5 @@
-import datetime
-from typing import List, Set, Dict, Optional
+from app.schemas.mongo import MongoModel
 
-from pydantic import Field
-from app.models.mongo import MongoModel, PyObjectId
 
 class UserEloSchema(MongoModel):
     user_id: int

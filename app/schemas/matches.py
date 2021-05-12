@@ -1,10 +1,9 @@
 import datetime
-from enum import Enum
 from typing import List, Set, Dict, Optional
 
 from pydantic import Field
 
-from app.models.mongo import MongoModel, PyObjectId
+from app.schemas.mongo import MongoModel, PyObjectId
 
 
 class ScoreSchema(MongoModel):

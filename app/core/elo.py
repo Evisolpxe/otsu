@@ -61,6 +61,5 @@ class EloCalculator:
 
         elo_change_dict = {player: int(self._anti_inflate(change, d_i_list))
                            for player, change in elo_change_dict.items()}
-        print(self.init_player_elo)
         return {'elo_change': elo_change_dict,
                 'player_elo': {user_id: elo + elo_change_dict[user_id] for user_id, elo in self.init_player_elo.items()}}

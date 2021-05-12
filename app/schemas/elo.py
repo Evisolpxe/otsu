@@ -1,11 +1,9 @@
 import datetime
-from typing import List, Set, Dict, Optional, Any
+from typing import Optional, Any
 
 from pydantic import Field
 
-from app.models.mongo import MongoModel, PyObjectId
-from app.festivals import EloFestivalEnum
-from app.rules import PerformanceEnum
+from app.schemas.mongo import MongoModel
 
 
 class MatchEloInSchema(MongoModel):

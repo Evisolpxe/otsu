@@ -39,3 +39,12 @@ class User(DynamicDocument):
             return user
         if user_data := api_v1.get_user(user_id=user_id, username=username):
             return cls(**user_data[0]).save()
+
+
+class UserScores(DynamicDocument):
+    username = StringField(required=True)
+    beatmap_id = IntField(required=True)
+
+    meta = {
+        'indexes': ['user_id', 'username']
+    }

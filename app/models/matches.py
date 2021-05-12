@@ -234,7 +234,7 @@ class MatchResult(DynamicDocument):
         elo.EloChange.delete_elo_result(self.match_id.match_id)
 
     @classmethod
-    def get_all_match_involved_users(cls, user_id_list: list, festival: str, current_match_id: int = 0) -> List[
-        MatchResult]:
+    def get_all_match_involved_users(cls, user_id_list: list, festival: str, current_match_id: int = 0) -> \
+            List[MatchResult]:
         return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id, festival=festival).order_by(
             '+match_id').all()
