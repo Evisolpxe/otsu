@@ -55,4 +55,4 @@ async def get_all_user_score_aio(username_list: List[str], beatmap_id: int, mods
         return results
 
 
-print(asyncio.run(get_all_user_score_aio(['Explosive', 'rinkon', 'Dsan'], 1849487)))
+# print(asyncio.run(get_all_user_score_aio(['Explosive', 'rinkon', 'Dsan'], 1849487)))
