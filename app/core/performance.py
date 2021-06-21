@@ -74,7 +74,8 @@ class BaseRule:
                 total_rank_point[user] += rank_point
             self.performance_rank = {
                 user: rank for rank, user in enumerate(
-                    sorted(total_rank_point, key=total_rank_point.get, reverse=True), 1)
+                    sorted(total_rank_point, key=total_rank_point.get, reverse=True), 1
+                )
             }
 
             # 通过胜场最多的队伍得到胜利队
@@ -85,8 +86,8 @@ class BaseRule:
             for team, player in game.player_team.items():
                 team_player[team].update(player)
                 self.player_list.update(player)
-        self.match_winner = list(team_player[self.winner_team]) if self.winner_team \
-            else [max(total_rank_point, key=total_rank_point.get)]
+        self.match_winner = list(team_player[self.winner_team]) \
+            if self.winner_team else [max(total_rank_point, key=total_rank_point.get)]
 
     def save_to_db(self) -> Optional[dict]:
         if self._validation:
@@ -185,7 +186,7 @@ class EloRule(BaseRule):
     def _score_v1_no_fail_check(score: ScoreSchema.score, scoring_type: int):
         # enable_mods :1 == no fail
         # scoring_type :0 == v1
-        if score.enable_mods & 1:
+        if score.enable_mods & scoring_type == 0:
             return score.score * 2
 
     def _calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
