@@ -87,7 +87,8 @@ class BaseRule:
                 team_player[team].update(player)
                 self.player_list.update(player)
         self.match_winner = list(team_player[self.winner_team]) \
-            if self.winner_team else [max(total_rank_point, key=total_rank_point.get)]
+            if self.winner_team else [max(total_rank_point, key=total_rank_point.get)] \
+            if total_rank_point else []
 
     def save_to_db(self) -> Optional[dict]:
         if self._validation:
@@ -121,7 +122,7 @@ class SoloRule(BaseRule):
 
     def _calc_game_results(self) -> None:
         for game in self.valid_game:
-
+            print(game)
             valid_scores = [score for score in game.scores if score.score >= 5000]
             if len(valid_scores) != 2:
                 self._validation = False
@@ -169,7 +170,7 @@ class EloRule(BaseRule):
         self.name = 'elo'
         self.description = '标准elo算法。'
 
-        self._minimum_games_check(4)
+        self._minimum_games_check(2)
         self._calc_game_results()
         self._calc_match_result()
 
@@ -192,25 +193,48 @@ class EloRule(BaseRule):
     def _calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
         return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self._threshold + bonus, 4)
 
-    @staticmethod
-    def _calc_winner_team(self, scores: ScoreSchema):
-        for score in scores:
-            pass
 
     def _calc_game_results(self):
         for game in self.valid_game:
             valid_scores = [score for score in game.scores if score.score >= 10000]
-            if len(valid_scores) != 2:
+            if len(valid_scores) < 2:
                 self._validation = False
                 self._message = '比赛人数不足2人，无法使用elo规则哦！'
                 break
 
             #
-            sum_sqrt_score = sum([sqrt(self._score_v1_no_fail_check(i, game.scoring_type))
-                                  for i in game.scores])
+            team_red_score, team_blue_score, sqrt_sum = 0, 0, 0
+            player_team = defaultdict(list)
+            rank_point_dict = {}
 
-            for score in game.scores:
-                pass
+            for player_score in game.scores:
+                player_team[player_score.team].append(player_score.user_id)
+
+                if player_score.team:
+                    team_blue_score += player_score.score
+                elif player_score.team == 2:
+                    team_red_score += player_score.score
+
+                sqrt_sum += sqrt(player_score.score)
+
+                rank_point_dict[player_score.user_id] = 0
+
+            winner_team = 1 if team_blue_score > team_red_score else 2
+
+            for player_score in game.scores:
+                bonus = self._win_bonus if winner_team == player_score.team else 0
+                rank_point = self._calc_rank_point(player_score.score, sqrt_sum, len(game.scores), bonus)
+                rank_point_dict[player_score.user_id] += rank_point
+
+            self.game_results.append(
+                GameResultSchema(
+                    game_id=game.game_id,
+                    rank_point=rank_point_dict,
+                    winner_team=winner_team,
+                    game_winner=[i.user_id for i in game.scores if i.team == winner_team],
+                    player_team=player_team
+                )
+            )
 
 
 # class PerformanceLibrary(Enum):
