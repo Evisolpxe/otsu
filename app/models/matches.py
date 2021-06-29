@@ -208,10 +208,10 @@ class MatchResult(DynamicDocument):
     def calc_elo(self):
         from app.models import elo
         from app.core.elo import EloCalculator
-
         # 获取较晚场次，删除本场后的所有相关场次elo数据
         related_matches_elo_change_after_this = self.get_all_match_involved_users(self.player_list,
-                                                                                  self.match_id)
+                                                                                  self.elo_festival,
+                                                                                  self.match_id.match_id)
         for match in related_matches_elo_change_after_this:
             match.delete_elo()
 
@@ -223,7 +223,6 @@ class MatchResult(DynamicDocument):
         ).run()
 
         elo.EloChange.add_elo_result(self.match_id.match_id, elo_result.get('elo_change'), self.elo_festival)
-
         for match in related_matches_elo_change_after_this:
             match.calc_elo()
 
@@ -237,7 +236,8 @@ class MatchResult(DynamicDocument):
     def get_all_match_involved_users(
             cls,
             user_id_list: list,
-            festival: str,
+            elo_festival: str,
             current_match_id: int = 0) -> List[MatchResult]:
-        return cls.objects(player_list__in=user_id_list, match_id__gt=current_match_id, festival=festival).order_by(
-            '+match_id').all()
+        return cls.objects(
+            player_list__in=user_id_list, match_id__gt=current_match_id, elo_festival=elo_festival
+        ).order_by('+match_id').all()
