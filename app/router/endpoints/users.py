@@ -1,8 +1,9 @@
 from typing import List, Union
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import ORJSONResponse
 
+from . import make_response
 from app.models import matches, elo, users
 from app.core.elo import EloCalculator
 from app.core.performance import SoloRule
@@ -18,7 +19,12 @@ router = APIRouter()
 async def get_user(user_id: int, elo_festival: str):
     if user := elo.UserElo.get_user_elo(user_id, elo_festival):
         return user
-    raise HTTPException(404, detail={'message': '没有这位玩家的信息哦。'})
+
+    return ORJSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                          content=make_response('Failed',
+                                                status.HTTP_404_NOT_FOUND,
+                                                '没有这位玩家的信息哦。'))
+
 
 
 @router.get('/{user_id}/recent',
@@ -27,7 +33,10 @@ async def get_user(user_id: int, elo_festival: str):
 async def get_user_recent(user_id: int, elo_festival: str, num: int = Query(5)):
     if user := elo.UserElo.get_user_elo(user_id, elo_festival):
         return [i for i in user.elo_change_list][:num]
-    raise HTTPException(404, detail={'message': '没有这位玩家的信息哦。'})
+    return ORJSONResponse(status_code=status.HTTP_404_NOT_FOUND,
+                          content=make_response('Failed',
+                                                status.HTTP_404_NOT_FOUND,
+                                                '没有这位玩家的信息哦。'))
 
 
 @router.post('/user_id_translator',
