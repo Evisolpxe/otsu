@@ -76,6 +76,10 @@ async def delete_match_game(score_id: int):
              summary='计算光斗力。',
              response_class=ORJSONResponse)
 async def get_light_power(*,
-                          match_with_warm: List[str] = Body(..., example=['85172398/2', '84972689/2', '84896923/2'])):
+                          match_with_warm: List[str] = Body(..., example=['85172398/2', '84972689/2', '84896923/2'])
+                          ):
+    """
+    统计设计
+    """
     light_power = LightPower.split_warm(match_with_warm)
     return {users.User.get_user(k).username or '': v for k, v in light_power.light_power.items() if v != 0}
