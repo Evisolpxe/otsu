@@ -1,12 +1,13 @@
 from typing import List, Union
 
-from fastapi import APIRouter, HTTPException, status, Path
+from fastapi import APIRouter, HTTPException, status, Path, Body
 from fastapi.responses import ORJSONResponse
 
 from . import make_response
-from app.models import matches, elo
+from app.models import matches, elo, users
 from app.core.elo import EloCalculator
 from app.core.performance import SoloRule
+from app.core.light_power import LightPower
 from app.schemas.matches import MatchSchema
 from app.schemas.elo import MatchEloInSchema
 
@@ -69,3 +70,12 @@ async def delete_match_game(game_id: int):
                response_class=ORJSONResponse)
 async def delete_match_game(score_id: int):
     return matches.MatchGame.delete_game(score_id)
+
+
+@router.post('/light_power',
+             summary='计算光斗力。',
+             response_class=ORJSONResponse)
+async def get_light_power(*,
+                          match_with_warm: List[str] = Body(..., example=['85172398/2', '84972689/2', '84896923/2'])):
+    light_power = LightPower.split_warm(match_with_warm)
+    return {users.User.get_user(k).username or '': v for k, v in light_power.light_power.items() if v != 0}

@@ -1,4 +1,6 @@
-from typing import List
+from __future__ import annotations
+
+from typing import List, Dict
 from operator import attrgetter
 from itertools import groupby
 from collections import defaultdict
@@ -8,8 +10,11 @@ from app.models.matches import Match, MatchScore
 
 class LightPower:
 
-    def __init__(self, matches: List[Match]):
-        games = sorted([game for match in matches for game in match.games], key=attrgetter('beatmap_id'))
+    def __init__(self, matches: List[Match], warm_up: Dict[int, int]):
+
+        games = sorted([game for match in matches
+                        for game in match.games[warm_up.get(match.match_id, 0):]],  # 删掉热手
+                       key=attrgetter('beatmap_id'))
 
         self.grouped_game = groupby(games, key=attrgetter('beatmap_id'))
         self.light_power_item = defaultdict(list)
@@ -30,9 +35,21 @@ class LightPower:
             for score in scores:
                 self.light_power_item[str(score.user_id)].append(round(score.score / avg_score, 5))
 
+    @classmethod
+    def split_warm(cls, match_with_warm: List[str]) -> LightPower:
+        match_list = []
+        warm_dict = {}
+        for match in match_with_warm:
+            data = match.split('/')
+            match_list.append(int(data[0]))
+            try:
+                warm_dict[int(data[0])] = int(data[1])
+            except IndexError:
+                pass
+        return cls([Match.get_match(i) for i in match_list], warm_dict)
 
 # OCLR = [85172398, 84972689, 85044339, 84896923, 85501582, 85439390, 85503945, 85546490, 86302764, 86362224]
 #
-# C = LightPower([Match.get_match(i) for i in OCLR])
+# C = LightPower([Match.get_match(i) for i in OCLR], {85172398: 5})
 #
 # print(C.light_power)
