@@ -48,7 +48,8 @@ async def add_match_elo(*,
                                                     match_response.get('message')))
     match_result = match_response.get('match_result')
     elo_change = match_result.calc_elo()
-    return {k: users.User.get_user(v).username for k, v in elo_change.items()}
+    return {key: {users.User.get_user(k).username or '': v for k, v in value.items()}
+            for key, value in elo_change.items()}
 
 
 @router.delete('/{match_id}',
