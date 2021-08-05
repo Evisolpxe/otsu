@@ -42,3 +42,34 @@ class EloFestivalSchema(MongoModel):
                 'end_time': '2021-01-03 00:00',
             }
         }
+
+
+class UserRankingSchema(MongoModel):
+    user_id: int
+    username: str
+    country: str
+    rank: int
+    country_rank: int
+    current_elo: int
+    play_counts: int
+
+    class Config:
+        schema_extra = {
+            'example': {
+                'username': 'Crystal',
+                'rank': 1,
+                'current_elo': 99999
+            }
+        }
+
+
+class UserEloSchema(MongoModel):
+    user_id: int
+    elo_festival: EloFestivalSchema
+    current_elo: int
+    init_elo: int
+
+
+class EloChangeSchema(MongoModel):
+    match_id: int
+    difference: int

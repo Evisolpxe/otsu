@@ -48,6 +48,7 @@ class BaseRule:
     def _remove_invalid_game(self) -> Match.games:
         # 滤过少于一人的对局以及热手和非赛图以及未结束的比赛(abort)
         valid_game = [game for game in self.match.games[self.warm_up:] if len(game.scores) >= 2 and game.end_time]
+
         if self.map_pool:
             valid_game = [game for game in self.valid_game if game.beatmap_id in self.map_pool]
         return valid_game
@@ -86,9 +87,11 @@ class BaseRule:
             for team, player in game.player_team.items():
                 team_player[team].update(player)
                 self.player_list.update(player)
-        self.match_winner = list(team_player[self.winner_team]) \
-            if self.winner_team else [max(total_rank_point, key=total_rank_point.get)] \
-            if total_rank_point else []
+
+        if self.winner_team == 0:
+            self.match_winner = [max(total_rank_point, key=total_rank_point.get)]
+        else:
+            self.match_winner = list(team_player[str(self.winner_team)])
 
     def save_to_db(self) -> Optional[dict]:
         if self._validation:
@@ -122,7 +125,6 @@ class SoloRule(BaseRule):
 
     def _calc_game_results(self) -> None:
         for game in self.valid_game:
-            print(game)
             valid_scores = [score for score in game.scores if score.score >= 5000]
             if len(valid_scores) != 2:
                 self._validation = False
@@ -193,7 +195,6 @@ class EloRule(BaseRule):
     def _calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
         return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self._threshold + bonus, 4)
 
-
     def _calc_game_results(self):
         for game in self.valid_game:
             valid_scores = [score for score in game.scores if score.score >= 10000]
@@ -208,9 +209,11 @@ class EloRule(BaseRule):
             rank_point_dict = {}
 
             for player_score in game.scores:
+                if player_score.score < 10000:
+                    continue
                 player_team[player_score.team].append(player_score.user_id)
 
-                if player_score.team:
+                if player_score.team == 1:
                     team_blue_score += player_score.score
                 elif player_score.team == 2:
                     team_red_score += player_score.score
@@ -222,6 +225,8 @@ class EloRule(BaseRule):
             winner_team = 1 if team_blue_score > team_red_score else 2
 
             for player_score in game.scores:
+                if player_score.score < 10000:
+                    continue
                 bonus = self._win_bonus if winner_team == player_score.team else 0
                 rank_point = self._calc_rank_point(player_score.score, sqrt_sum, len(game.scores), bonus)
                 rank_point_dict[player_score.user_id] += rank_point

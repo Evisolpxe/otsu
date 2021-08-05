@@ -20,6 +20,7 @@ class User(DynamicDocument):
     username = StringField()
     join_date = DateTimeField()
     pp_rank = IntField()
+    country = StringField()
     query_time = DateTimeField(default=datetime.now)
 
     @queryset_manager

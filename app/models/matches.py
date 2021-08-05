@@ -59,6 +59,18 @@ class MatchScore(Document):
         return (50 * self.count50 + 100 * self.count100 + 300 * self.count300) / \
                (300 * (self.count300 + self.count100 + self.count50 + self.count_miss))
 
+    @classmethod
+    def get_damage(cls, match_id: int) -> List[dict]:
+        if match_result := MatchResult.get_match_result(match_id):
+            game_id = [game.game_id.id for game in match_result.game_results]
+            return list(cls.objects.aggregate([
+                {'$match': {'match_id': match_id, 'game_id': {"$in": game_id}}},
+                {'$group': {'_id': '$user_id',
+                            "total_dmg": {"$sum": "$score"},
+                            "avg_dmg": {"$avg": "$score"}}},
+            ]))
+        return []
+
 
 class MatchGame(Document):
     """
@@ -143,15 +155,17 @@ class Match(Document):
             ).save()
 
     @classmethod
-    def delete_match(cls, match_id: int) -> int:
+    def delete_match(cls, match_id: int) -> Optional[EloFestival]:
         if match := cls.objects(match_id=match_id).first():
             if match_result := MatchResult.get_match_result(match_id):
+                elo_festival = match_result.elo_festival
                 match_result.delete_elo()
-            for game in match.games:
-                for score in game.scores:
-                    score.delete()
-                game.delete()
-            return match.delete()
+                for game in match.games:
+                    for score in game.scores:
+                        score.delete()
+                    game.delete()
+                match.delete()
+                return elo_festival
 
 
 class GameResult(DynamicDocument):

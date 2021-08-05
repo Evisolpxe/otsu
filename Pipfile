@@ -19,6 +19,7 @@ pymongo = "*"
 uvicorn = "*"
 orjson = "*"
 aiohttp = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.8"

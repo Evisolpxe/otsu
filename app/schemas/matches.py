@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Set, Dict, Optional
+from typing import List, Set, Dict, Optional, Union
 
 from pydantic import Field
 
@@ -97,8 +97,18 @@ class MatchSchema(MongoModel):
         }
 
 
-class GameResultSchema(MongoModel):
+class GameRResultSchema(MongoModel):
     game_id: int
+
+
+class MatchRResultSchema(MongoModel):
+    match_id: int = Field(...)
+    name: str
+    start_time: datetime.datetime
+
+
+class GameResultSchema(MongoModel):
+    game_id: Union[int, GameRResultSchema]
     winner_team: int
     game_winner: List[int]
     rank_point: Dict[str, float]
@@ -106,12 +116,11 @@ class GameResultSchema(MongoModel):
 
 
 class MatchResultSchema(MongoModel):
-    match_id: int
+    match_id: MatchRResultSchema
     winner_team: int
     match_winner: List[int]
+    player_list: List[int]
     performance_rule: str
     performance_rank: dict
 
     game_results: List[GameResultSchema]
-
-
