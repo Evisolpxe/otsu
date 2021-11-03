@@ -70,8 +70,8 @@ async def add_match_elo(*,
                               content=make_response('Failed',
                                                     status.HTTP_404_NOT_FOUND,
                                                     match_response.get('message')))
-
     match_result = match_response.get('match_result')
+
     elo_change = match_result.calc_elo()
     background_task.add_task(elo.UserRanking.create_ranking, payload.elo_festival)
     return {key: {users.User.get_user(k).username or '': v for k, v in value.items()}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional, List
+from operator import attrgetter
 
 from mongoengine import (
     Document,
@@ -219,26 +220,35 @@ class MatchResult(DynamicDocument):
             return rule_instance.save_to_db()
         return {'message': '没有找到可用对局。', 'validation': False}
 
-    def calc_elo(self):
+    def calc_elo(self, loop=True):
         from app.models import elo
         from app.core.elo import EloCalculator
         # 获取较晚场次，删除本场后的所有相关场次elo数据
-        related_matches_elo_change_after_this = self.get_all_match_involved_users(self.player_list,
-                                                                                  self.elo_festival,
-                                                                                  self.match_id.match_id)
-        for match in related_matches_elo_change_after_this:
-            match.delete_elo()
+        all_matches = []
+        # 首先要找到所有相关场次
+        if loop:
+            current_match_id = self.match_id.match_id
+            user_list = set(self.player_list)
 
+            while match := self.get_match_involved_users(list(user_list), self.elo_festival, current_match_id):
+                all_matches.append(match)
+                user_list.update(set(match.player_list))
+                current_match_id = match.match_id.match_id
+
+        # sorted_matches = sorted(all_matches, key=attrgetter('match_id.match_id'))
+
+        for match in all_matches:
+            match.delete_elo()
         # 计算elo
         elo_result = EloCalculator(
             self.performance_rank,
             {user_id: elo.UserElo.get_user_elo(user_id, self.elo_festival.name).current_elo
              for user_id in self.player_list}
         ).run()
-
         elo.EloChange.add_elo_result(self.match_id.match_id, elo_result.get('elo_change'), self.elo_festival)
-        for match in related_matches_elo_change_after_this:
-            match.calc_elo()
+
+        for match in all_matches:
+            match.calc_elo(loop=False)
 
         return elo_result
 
@@ -246,12 +256,18 @@ class MatchResult(DynamicDocument):
         from app.models import elo
         elo.EloChange.delete_elo_result(self.match_id.match_id)
 
+    # @property
+    # def latest_match_involved_users(self) -> MatchResult:
+    #     return MatchResult.objects(
+    #         player_list__in=self.player_list, match_id__gt=self.match_id.match_id, elo_festival=self.elo_festival
+    #     ).order_by('+match_id').first()
+
     @classmethod
-    def get_all_match_involved_users(
+    def get_match_involved_users(
             cls,
             user_id_list: list,
             elo_festival: str,
-            current_match_id: int = 0) -> List[MatchResult]:
+            current_match_id: int = 0) -> MatchResult:
         return cls.objects(
             player_list__in=user_id_list, match_id__gt=current_match_id, elo_festival=elo_festival
-        ).order_by('+match_id').all()
+        ).order_by('+match_id').first()

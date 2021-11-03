@@ -48,7 +48,6 @@ class BaseRule:
     def _remove_invalid_game(self) -> Match.games:
         # 滤过少于一人的对局以及热手和非赛图以及未结束的比赛(abort)
         valid_game = [game for game in self.match.games[self.warm_up:] if len(game.scores) >= 2 and game.end_time]
-
         if self.map_pool:
             valid_game = [game for game in self.valid_game if game.beatmap_id in self.map_pool]
         return valid_game
@@ -192,6 +191,11 @@ class EloRule(BaseRule):
         if score.enable_mods & scoring_type == 0:
             return score.score * 2
 
+    @staticmethod
+    def _score_v2_easy_check(score: ScoreSchema.score, scoring_type: int):
+        if score.enable_mods == 2 & scoring_type == 3:
+            return score.score * 1.5
+
     def _calc_rank_point(self, score: int, total_score: int, player_number: int, bonus: float) -> float:
         return round(player_number * sqrt(score) / sqrt(total_score) / 8 - self._threshold + bonus, 4)
 
@@ -211,6 +215,7 @@ class EloRule(BaseRule):
             for player_score in game.scores:
                 if player_score.score < 10000:
                     continue
+                player_score = self._score_v2_easy_check(player_score, game.scoring_type)
                 player_team[player_score.team].append(player_score.user_id)
 
                 if player_score.team == 1:
